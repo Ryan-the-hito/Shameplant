@@ -3,7 +3,7 @@
 
 block_cipher = None
 
-__version__ = '0.0.3'
+__version__ = '0.0.4'
 
 info_plist = {
     'LSUIElement': True,
@@ -15,7 +15,7 @@ a = Analysis(
     pathex=['/Users/ryanshenefield/Downloads/ShameplantWindowSwitchAuto.py'],
     binaries=[],
     datas=[('Shameplant_desk.icns', '.')],
-    hiddenimports=['subprocess', 'Quartz', 'objc', 'psutil'],
+    hiddenimports=['subprocess', 'Quartz', 'objc'],
     hookspath=[],
     hooksconfig={},
     runtime_hooks=[],

@@ -9,7 +9,6 @@ import objc
 from pathlib import Path
 from PyQt6.QtWidgets import QApplication, QWidget
 import Quartz
-import psutil
 try:
     from AppKit import NSWorkspace
     from Foundation import NSObject
@@ -57,6 +56,7 @@ class AppEventListener(NSObject):
             pos_file = os.path.join(settings_dir, "Position.txt")
             dist_file = os.path.join(settings_dir, "Distance.txt")
             core_file = os.path.join(BasePath, "core_value.txt")
+            basic_file = os.path.join(BasePath, "menu_height.txt")
 
             if not os.path.exists(pos_file) or not os.path.exists(dist_file) or not os.path.exists(core_file):
                 return
@@ -64,48 +64,63 @@ class AppEventListener(NSObject):
             dock_position = int(codecs.open(pos_file, 'r', encoding='utf-8').read().strip())
             threshold = int(codecs.open(dist_file, 'r', encoding='utf-8').read().strip())
             core_value = int(codecs.open(core_file, 'r', encoding='utf-8').read().strip())
+            basic_value = int(codecs.open(basic_file, 'r', encoding='utf-8').read().strip())
 
             # 获取当前前台应用的应用程序标识符（PID）
-            pid = self.get_pid_psutil(app_name)
+            #pid = self.get_pid_psutil(app_name)
 
             # 使用 Accessibility API 获取该应用的窗口信息
             info = self.get_app_window_info(app_name)
+            if info is None:
+                time.sleep(0.5)
+                try:
+                    info = self.get_app_window_info(app_name)
+                except Exception as e:
+                    # 发生异常时打印错误信息
+                    p = "程序发生异常: info is None" + str(e)
+                    with open(BasePath + "Error.txt", 'a', encoding='utf-8') as f0:
+                        f0.write(p)
             x = info[0]
             y = info[1]
             width = info[2]
             height = info[3]
 
-            compare_value = threshold
+            y_basic_value = 0
             if dock_position == 0:
-                compare_value = int(y) + int(height) + threshold
-            if dock_position == 1:
-                compare_value = int(x) - threshold
-            if dock_position == 2:
-                compare_value = int(x) + int(width) + threshold
+                y_basic_value = basic_value - 1
+            # 仅对可见窗口做出反应
+            if y > y_basic_value and width > 0 and height > 0:
+                compare_value = threshold
+                if dock_position == 0:
+                    compare_value = int(y) + int(height) + threshold
+                if dock_position == 1:
+                    compare_value = int(x) - threshold
+                if dock_position == 2:
+                    compare_value = int(x) + int(width) + threshold
 
-            # 仅在 dock 状态需要变化时执行 AppleScript，减少 CPU 消耗
-            if (dock_position == 0 and compare_value >= core_value) or \
-                    (dock_position == 1 and compare_value <= core_value) or \
-                    (dock_position == 2 and compare_value >= core_value):
-                toggle_dock_script = 'tell application "System Events" to set the autohide of dock preferences to true'
-            else:
-                toggle_dock_script = 'tell application "System Events" to set the autohide of dock preferences to false'
+                # 仅在 dock 状态需要变化时执行 AppleScript，减少 CPU 消耗
+                if (dock_position == 0 and compare_value >= core_value) or \
+                        (dock_position == 1 and compare_value <= core_value) or \
+                        (dock_position == 2 and compare_value >= core_value):
+                    toggle_dock_script = 'tell application "System Events" to set the autohide of dock preferences to true'
+                else:
+                    toggle_dock_script = 'tell application "System Events" to set the autohide of dock preferences to false'
 
-            os.system(f"osascript -e '{toggle_dock_script}'")
+                os.system(f"osascript -e '{toggle_dock_script}'")
         except Exception as e:
             # 发生异常时打印错误信息
             p = "程序发生异常:" + str(e)
             with open(BasePath + "Error.txt", 'a', encoding='utf-8') as f0:
                 f0.write(p)
 
-    def get_pid_psutil(self, app_name):
-        for proc in psutil.process_iter(attrs=["pid", "name"]):
-            try:
-                if app_name.lower() in proc.info["name"].lower():
-                    return proc.info["pid"]
-            except (psutil.NoSuchProcess, psutil.AccessDenied, psutil.ZombieProcess):
-                continue
-        return None
+    # def get_pid_psutil(self, app_name):
+    #     for proc in psutil.process_iter(attrs=["pid", "name"]):
+    #         try:
+    #             if app_name.lower() in proc.info["name"].lower():
+    #                 return proc.info["pid"]
+    #         except (psutil.NoSuchProcess, psutil.AccessDenied, psutil.ZombieProcess):
+    #             continue
+    #     return None
 
     def get_app_window_info(self, app_name):
         # 仅获取当前屏幕上可见的窗口
