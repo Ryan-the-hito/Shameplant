@@ -11,5 +11,5 @@ Be aware that the app now still has some bugs and remains in the early test stag
 - [ ] Automatic download and replacement
 - [ ] Automatic restart when screen switches
 - [ ] There are bugs if you use stage manager to switch windows
-- [ ]Add: when switching between different windows of the same app
-- [ ]Add: Blacklist feature
+- [ ] Add: when switching between different windows of the same app
+- [ ] Add: Blacklist feature
