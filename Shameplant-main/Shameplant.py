@@ -10,7 +10,7 @@ import time
 from PyQt6.QtWidgets import (QWidget, QPushButton, QApplication,
 							 QLabel, QHBoxLayout, QVBoxLayout, QLineEdit,
 							 QSystemTrayIcon, QMenu, QDialog, QMenuBar, QCheckBox, QTextEdit, QComboBox)
-from PyQt6.QtCore import Qt, QTimer
+from PyQt6.QtCore import Qt, QTimer, QThread, pyqtSignal
 from PyQt6.QtGui import QAction, QIcon, QColor
 import PyQt6.QtGui
 import webbrowser
@@ -27,7 +27,7 @@ import re
 import os
 from pathlib import Path
 try:
-	from AppKit import NSWorkspace
+	from AppKit import NSWorkspace, NSScreen
 except ImportError:
 	print("can't import AppKit -- maybe you're running python from homebrew?")
 	print("try running with /usr/bin/python instead")
@@ -80,10 +80,12 @@ tray.setContextMenu(menu)
 # create a system menu
 btna4 = QAction("&Switch on Shameplant!")
 btna5 = QAction("&Set!")
+btna6 = QAction("&Quit!")
 sysmenu = QMenuBar()
 file_menu = sysmenu.addMenu("&Actions")
 file_menu.addAction(btna4)
 file_menu.addAction(btna5)
+file_menu.addAction(btna6)
 
 
 class window_about(QWidget):  # 增加说明页面(About)
@@ -129,7 +131,7 @@ class window_about(QWidget):  # 增加说明页面(About)
 		widg2.setLayout(blay2)
 
 		widg3 = QWidget()
-		lbl1 = QLabel('Version 0.0.7', self)
+		lbl1 = QLabel('Version 0.0.9', self)
 		blay3 = QHBoxLayout()
 		blay3.setContentsMargins(0, 0, 0, 0)
 		blay3.addStretch()
@@ -592,7 +594,7 @@ class window_update(QWidget):  # 增加更新页面（Check for Updates）
 
 	def initUI(self):  # 说明页面内信息
 
-		self.lbl = QLabel('Current Version: v0.0.7', self)
+		self.lbl = QLabel('Current Version: v0.0.9', self)
 		self.lbl.move(30, 45)
 
 		lbl0 = QLabel('Download Update:', self)
@@ -684,6 +686,29 @@ class window_update(QWidget):  # 增加更新页面（Check for Updates）
 			self.lbl2.adjustSize()
 
 
+class TimerThread(QThread):
+	tick = pyqtSignal()  # 用于向主线程发信号
+
+	def run(self):
+		# 在子线程中创建一个定时器
+		self.timer = QTimer()
+		self.timer.setInterval(60 * 1000)  # 60秒
+		self.timer.timeout.connect(self.on_timeout)
+		self.timer.start()
+
+		# 启动事件循环，这很重要！
+		self.exec()
+
+	def on_timeout(self):
+		self.tick.emit()  # 发出信号通知主线程
+
+	def stop(self):
+		if hasattr(self, 'timer') and self.timer.isActive():
+			self.timer.stop()
+		self.quit()  # 结束事件循环
+		self.wait()  # 等待线程安全退出
+
+
 class window3(QWidget):  # 主窗口
 	def __init__(self):
 		super().__init__()
@@ -714,137 +739,72 @@ class window3(QWidget):  # 主窗口
 
 		###
 
+		main_screen = NSScreen.mainScreen()
+		frame = main_screen.frame()
+		visible_frame = main_screen.visibleFrame()
 		self.dock_postion = codecs.open(self.fulldir2, 'r', encoding='utf-8').read()
 		self.auto_launch = codecs.open(self.fulldir4, 'r', encoding='utf-8').read()
 
 		if self.dock_postion == 'x':
 			CMD = '''
-				on run argv
-					display notification (item 2 of argv) with title (item 1 of argv)
-				end run'''
+		        on run argv
+		            display notification (item 2 of argv) with title (item 1 of argv)
+		        end run'''
 			self.notify(CMD, "Shameplant: Dynaic Dock",
 						f"Please go to the Settings panel in the menu bar.")
 		if self.dock_postion == '0':
-			DockRe = codecs.open(BasePath + "DockRe.txt", 'r', encoding='utf-8').read()
-			if DockRe == '0':
-				# AppleScript命令
-				toggle_dock_script = '''
-					tell application "System Events" to set the autohide of dock preferences to true
-				'''
-				# 运行AppleScript
-				subprocess.run(["osascript", "-e", toggle_dock_script])
-
-				with open(BasePath + "DockRe.txt", 'w', encoding='utf-8') as f0:
-					f0.write('1')
-
-				os.execv(sys.executable, [sys.executable, __file__])
-
-			if DockRe == '1':
-				small_height = self.screen().availableGeometry().height()
-				screen_height = app.primaryScreen().geometry().height()
-				menubar_height = screen_height - small_height
-
-				with open(BasePath + "menu_height.txt", 'w', encoding='utf-8') as f0:
-					f0.write(str(menubar_height))
-
-				# AppleScript命令
-				toggle_dock_script = '''
-					tell application "System Events" to set the autohide of dock preferences to false
-				'''
-				# 运行AppleScript
-				subprocess.run(["osascript", "-e", toggle_dock_script])
-
-				with open(BasePath + "DockRe.txt", 'w', encoding='utf-8') as f0:
-					f0.write('2')
-
-				os.execv(sys.executable, [sys.executable, __file__])
-
-			if DockRe == '2':
-				small_height = self.screen().availableGeometry().height()
-				screen_height = app.primaryScreen().geometry().height()
-				menubar_height = int(codecs.open(BasePath + "menu_height.txt", 'r', encoding='utf-8').read())
-
-				dock_height = screen_height - small_height - menubar_height
-
-				core_value = screen_height - dock_height
-
-				with open(BasePath + "dock_height.txt", 'w', encoding='utf-8') as f0:
-					f0.write(str(dock_height))
-
-				with open(BasePath + "core_value.txt", 'w', encoding='utf-8') as f0:
-					f0.write(str(core_value))
-
+			# AppleScript命令
+			toggle_dock_script = '''
+		        tell application "System Events" to set the autohide of dock preferences to false
+		    '''
+			# 运行AppleScript
+			subprocess.run(["osascript", "-e", toggle_dock_script])
+			time.sleep(1)
+			dock_height = int(visible_frame.origin.y)
+			menubar_height = int(frame.size.height - visible_frame.size.height - dock_height)
+			core_value = int(frame.size.height - dock_height)
+			# 写入记录
+			with open(BasePath + "menu_height.txt", 'w', encoding='utf-8') as f0:
+				f0.write(str(menubar_height))
+			with open(BasePath + "dock_height.txt", 'w', encoding='utf-8') as f0:
+				f0.write(str(dock_height))
+			with open(BasePath + "core_value.txt", 'w', encoding='utf-8') as f0:
+				f0.write(str(core_value))
+			with open(BasePath + "Screen2.txt", 'w', encoding='utf-8') as f0:
+				f0.write('0')
 		if self.dock_postion == '1':
-			DockRe = codecs.open(BasePath + "DockRe.txt", 'r', encoding='utf-8').read()
-			if DockRe == '0':
-				# AppleScript命令
-				toggle_dock_script = '''
-					tell application "System Events" to set the autohide of dock preferences to false
-				'''
-				# 运行AppleScript
-				subprocess.run(["osascript", "-e", toggle_dock_script])
-
-				with open(BasePath + "DockRe.txt", 'w', encoding='utf-8') as f0:
-					f0.write('1')
-
-				os.execv(sys.executable, [sys.executable, __file__])
-
-			if DockRe == '1':
-				small_width = self.screen().availableGeometry().width()
-				screen_width = app.primaryScreen().geometry().width()
-
-				dock_width = screen_width - small_width
-
-				with open(BasePath + "dock_height.txt", 'w', encoding='utf-8') as f0:
-					f0.write(str(dock_width))
-
-				with open(BasePath + "core_value.txt", 'w', encoding='utf-8') as f0:
-					f0.write(str(dock_width))
-
+			# AppleScript命令
+			toggle_dock_script = '''
+		        tell application "System Events" to set the autohide of dock preferences to false
+		    '''
+			# 运行AppleScript
+			subprocess.run(["osascript", "-e", toggle_dock_script])
+			time.sleep(1)
+			dock_height = int(visible_frame.origin.x - frame.origin.x)
+			# 写入记录
+			with open(BasePath + "dock_height.txt", 'w', encoding='utf-8') as f0:
+				f0.write(str(dock_height))
+			with open(BasePath + "core_value.txt", 'w', encoding='utf-8') as f0:
+				f0.write(str(dock_height))
+			with open(BasePath + "Screen2.txt", 'w', encoding='utf-8') as f0:
+				f0.write('0')
 		if self.dock_postion == '2':
-			DockRe = codecs.open(BasePath + "DockRe.txt", 'r', encoding='utf-8').read()
-			if DockRe == '0':
-				# AppleScript命令
-				toggle_dock_script = '''
-					tell application "System Events" to set the autohide of dock preferences to true
-				'''
-				# 运行AppleScript
-				subprocess.run(["osascript", "-e", toggle_dock_script])
-
-				with open(BasePath + "DockRe.txt", 'w', encoding='utf-8') as f0:
-					f0.write('1')
-
-				os.execv(sys.executable, [sys.executable, __file__])
-
-			if DockRe == '1':
-				screen_width = app.primaryScreen().geometry().width()
-
-				with open(BasePath + "screen_width.txt", 'w', encoding='utf-8') as f0:
-					f0.write(str(screen_width))
-
-				# AppleScript命令
-				toggle_dock_script = '''
-					tell application "System Events" to set the autohide of dock preferences to false
-				'''
-				# 运行AppleScript
-				subprocess.run(["osascript", "-e", toggle_dock_script])
-
-				with open(BasePath + "DockRe.txt", 'w', encoding='utf-8') as f0:
-					f0.write('2')
-
-				os.execv(sys.executable, [sys.executable, __file__])
-
-			if DockRe == '2':
-				small_width = self.screen().availableGeometry().width()
-				screen_width = int(codecs.open(BasePath + "screen_width.txt", 'r', encoding='utf-8').read())
-				dock_width = screen_width - small_width
-				core_value = screen_width - dock_width
-
-				with open(BasePath + "dock_height.txt", 'w', encoding='utf-8') as f0:
-					f0.write(str(dock_width))
-
-				with open(BasePath + "core_value.txt", 'w', encoding='utf-8') as f0:
-					f0.write(str(core_value))
+			# AppleScript命令
+			toggle_dock_script = '''
+		        tell application "System Events" to set the autohide of dock preferences to false
+		    '''
+			# 运行AppleScript
+			subprocess.run(["osascript", "-e", toggle_dock_script])
+			time.sleep(1)
+			dock_height = int(frame.size.width - visible_frame.size.width)
+			core_value = int(visible_frame.size.width)
+			# 写入记录
+			with open(BasePath + "dock_height.txt", 'w', encoding='utf-8') as f0:
+				f0.write(str(dock_height))
+			with open(BasePath + "core_value.txt", 'w', encoding='utf-8') as f0:
+				f0.write(str(core_value))
+			with open(BasePath + "Screen2.txt", 'w', encoding='utf-8') as f0:
+				f0.write('0')
 
 		if self.auto_launch == '1':
 			# launch
@@ -860,6 +820,11 @@ class window3(QWidget):  # 主窗口
 				with open(BasePath + "Error.txt", 'a', encoding='utf-8') as f0:
 					f0.write(p)
 				action3.setChecked(False)
+
+		# 启动计时线程
+		self.timer_thread = TimerThread()
+		self.timer_thread.tick.connect(self.on_timer_tick)
+		self.timer_thread.start()
 
 	def notify(self, CMD, title, text):
 		subprocess.call(['osascript', '-e', CMD, title, text])
@@ -903,6 +868,116 @@ class window3(QWidget):  # 主窗口
 				with open(BasePath + "Error.txt", 'a', encoding='utf-8') as f0:
 					f0.write(p)
 				action3.setChecked(False)
+
+	def get_screen_with_dock(self):
+		for screen in NSScreen.screens():
+			frame = screen.frame()
+			visible = screen.visibleFrame()
+
+			# Dock 在底部时 visibleFrame 的 origin.y 会 > frame.origin.y
+			if visible.origin.y > frame.origin.y:
+				dock_height = visible.origin.y - frame.origin.y
+				return {
+					"screen": screen,
+					"dock_position": "bottom",
+					"dock_height": dock_height
+				}
+
+			# Dock 在左边
+			if visible.origin.x > frame.origin.x:
+				dock_height = visible.origin.x - frame.origin.x
+				print(visible.origin.x, frame.origin.x)
+				return {"screen": screen,
+						"dock_position": "left",
+						"dock_height": dock_height
+						}
+
+			# Dock 在右边
+			if visible.size.width < frame.size.width:
+				dock_height = frame.size.width - visible.size.width
+				return {"screen": screen,
+						"dock_position": "right",
+						"dock_height": dock_height
+						}
+
+		return None
+	def on_timer_tick(self):
+		# 如果此时的dock有显示、不为None，且dock的高度不为0，那么更新本地记录
+		if self.get_screen_with_dock() != None:
+			main_screen = NSScreen.mainScreen()
+			frame = main_screen.frame()
+			visible_frame = main_screen.visibleFrame()
+			try:
+				if self.dock_postion == 'x':
+					CMD = '''
+				        on run argv
+				            display notification (item 2 of argv) with title (item 1 of argv)
+				        end run'''
+					self.notify(CMD, "Shameplant: Dynaic Dock",
+								f"Please go to the Settings panel in the menu bar.")
+				if self.dock_postion == '0':
+					# AppleScript命令
+					toggle_dock_script = '''
+				        tell application "System Events" to set the autohide of dock preferences to false
+				    '''
+					# 运行AppleScript
+					subprocess.run(["osascript", "-e", toggle_dock_script])
+					time.sleep(1)
+					dock_height = int(visible_frame.origin.y)
+					menubar_height = int(frame.size.height - visible_frame.size.height - dock_height)
+					core_value = int(frame.size.height - dock_height)
+					if dock_height > 0:
+						# 写入记录
+						with open(BasePath + "menu_height.txt", 'w', encoding='utf-8') as f0:
+							f0.write(str(menubar_height))
+						with open(BasePath + "dock_height.txt", 'w', encoding='utf-8') as f0:
+							f0.write(str(dock_height))
+						with open(BasePath + "core_value.txt", 'w', encoding='utf-8') as f0:
+							f0.write(str(core_value))
+						with open(BasePath + "Screen2.txt", 'w', encoding='utf-8') as f0:
+							f0.write('0')
+				if self.dock_postion == '1':
+					# AppleScript命令
+					toggle_dock_script = '''
+				        tell application "System Events" to set the autohide of dock preferences to false
+				    '''
+					# 运行AppleScript
+					subprocess.run(["osascript", "-e", toggle_dock_script])
+					time.sleep(1)
+					dock_height = int(visible_frame.origin.x - frame.origin.x)
+					if dock_height > 0:
+						# 写入记录
+						with open(BasePath + "dock_height.txt", 'w', encoding='utf-8') as f0:
+							f0.write(str(dock_height))
+						with open(BasePath + "core_value.txt", 'w', encoding='utf-8') as f0:
+							f0.write(str(dock_height))
+						with open(BasePath + "Screen2.txt", 'w', encoding='utf-8') as f0:
+							f0.write('0')
+				if self.dock_postion == '2':
+					# AppleScript命令
+					toggle_dock_script = '''
+				        tell application "System Events" to set the autohide of dock preferences to false
+				    '''
+					# 运行AppleScript
+					subprocess.run(["osascript", "-e", toggle_dock_script])
+					time.sleep(1)
+					dock_height = int(frame.size.width - visible_frame.size.width)
+					core_value = int(visible_frame.size.width)
+					if dock_height > 0:
+						# 写入记录
+						with open(BasePath + "dock_height.txt", 'w', encoding='utf-8') as f0:
+							f0.write(str(dock_height))
+						with open(BasePath + "core_value.txt", 'w', encoding='utf-8') as f0:
+							f0.write(str(core_value))
+						with open(BasePath + "Screen2.txt", 'w', encoding='utf-8') as f0:
+							f0.write('0')
+			except Exception as e:
+				# 发生异常时打印错误信息
+				p = "程序发生异常:" + str(e)
+				with open(BasePath + "Error.txt", 'a', encoding='utf-8') as f0:
+					f0.write(p)
+		else:
+			pass
 
 
 class window4(QWidget):  # Customization settings
@@ -956,13 +1031,19 @@ class window4(QWidget):  # Customization settings
 		self.box_position.setFixedWidth(370)
 		defalist = ['Bottom', 'Left', 'Right']
 		self.box_position.addItems(defalist)
-		dock_position = codecs.open(self.fulldir2, 'r', encoding='utf-8').read()
-		if dock_position == '0':
-			self.box_position.setCurrentIndex(0)
-		if dock_position == '1':
-			self.box_position.setCurrentIndex(1)
-		if dock_position == '2':
-			self.box_position.setCurrentIndex(2)
+		if self.get_screen_with_dock() != None:
+			if self.get_screen_with_dock() == '0':
+				self.box_position.setCurrentIndex(0)
+				with open(self.fulldir2, 'w', encoding='utf-8') as f0:
+					f0.write('0')
+			if self.get_screen_with_dock() == '1':
+				self.box_position.setCurrentIndex(1)
+				with open(self.fulldir2, 'w', encoding='utf-8') as f0:
+					f0.write('1')
+			if self.get_screen_with_dock() == '2':
+				self.box_position.setCurrentIndex(2)
+				with open(self.fulldir2, 'w', encoding='utf-8') as f0:
+					f0.write('2')
 		self.box_position.currentIndexChanged.connect(self.position_change)
 
 		self.lbl2 = QLabel('Threshold: ', self)
@@ -1093,10 +1174,23 @@ class window4(QWidget):  # Customization settings
 		time.sleep(0.5)
 		os.execv(sys.executable, [sys.executable, __file__])
 
+	def get_screen_with_dock(self):
+		for screen in NSScreen.screens():
+			frame = screen.frame()
+			visible = screen.visibleFrame()
+			# Dock 在底部时 visibleFrame 的 origin.y 会 > frame.origin.y
+			if visible.origin.y > frame.origin.y:
+				return '0'
+			# Dock 在左边
+			if visible.origin.x > frame.origin.x:
+				return '1'
+			# Dock 在右边
+			if visible.size.width < frame.size.width:
+				return '2'
+		return None
+
 	def totalquit(self):
 		with open(BasePath + "ReLa.txt", 'w', encoding='utf-8') as f0:
-			f0.write('0')
-		with open(BasePath + "DockRe.txt", 'w', encoding='utf-8') as f0:
 			f0.write('0')
 		if action3.isChecked():
 			ScriptName = 'Quit ShameplantAuto'
@@ -1217,18 +1311,19 @@ if __name__ == '__main__':
 		try:
 			w1 = window_about()  # about
 			w2 = window_update()  # update
+			w4 = window4()  # CUSTOMIZING
 			w3 = window3()  # main1
 			w3.setAutoFillBackground(True)
 			p = w3.palette()
 			p.setColor(w3.backgroundRole(), QColor('#ECECEC'))
 			w3.setPalette(p)
-			w4 = window4()  # CUSTOMIZING
 			action1.triggered.connect(w1.activate)
 			action2.triggered.connect(w2.activate)
 			action3.triggered.connect(w3.activate)
 			action7.triggered.connect(w4.activate)
 			btna4.triggered.connect(w3.activate)
 			btna5.triggered.connect(w4.activate)
+			btna6.triggered.connect(w4.totalquit)
 			quit.triggered.connect(w4.totalquit)
 			app.setStyleSheet(style_sheet_ori)
 			app.exec()

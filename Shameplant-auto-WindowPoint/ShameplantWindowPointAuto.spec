@@ -3,7 +3,7 @@
 
 block_cipher = None
 
-__version__ = '0.0.9'
+__version__ = '0.0.1'
 
 info_plist = {
     'LSUIElement': True,
@@ -11,11 +11,11 @@ info_plist = {
 }
 
 a = Analysis(
-    ['Shameplant.py'],
-    pathex=['/Users/ryanshenefield/Downloads/Shameplant.py'],
+    ['ShameplantWindowPointAuto.py'],
+    pathex=['/Users/ryanshenefield/Downloads/ShameplantWindowPointAuto.py'],
     binaries=[],
-    datas=[('Shameplant_menu.icns', '.'), ('Shameplant_desk.icns', '.'), ('Shameplant_menu.png', '.'), ('wechat50.png', '.'), ('wechat20.png', '.'), ('wechat10.png', '.'), ('wechat5.png', '.'), ('alipay50.png', '.'), ('alipay20.png', '.'), ('alipay10.png', '.'), ('alipay5.png', '.'), ('ReLa.txt', '.'), ('DockRe.txt', '.'), ('Screen.txt', '.'), ('Screen2.txt', '.')],
-    hiddenimports=['subprocess', 'AppKit'],
+    datas=[('Shameplant_desk.icns', '.')],
+    hiddenimports=['subprocess', 'Quartz', 'pynput'],
     hookspath=[],
     hooksconfig={},
     runtime_hooks=[],
@@ -33,7 +33,7 @@ exe = EXE(
     a.scripts,
     [],
     exclude_binaries=True,
-    name='Shameplant',
+    name='ShameplantWindowPointAuto',
     debug=False,
     bootloader_ignore_signals=False,
     strip=False,
@@ -53,11 +53,11 @@ coll = COLLECT(
     strip=False,
     upx=True,
     upx_exclude=[],
-    name='Shameplant',
+    name='ShameplantWindowPointAuto',
 )
 app = BUNDLE(
     coll,
-    name='Shameplant.app',
+    name='ShameplantWindowPointAuto.app',
     icon='Shameplant_desk.icns',
     info_plist=info_plist,
     bundle_identifier=None,

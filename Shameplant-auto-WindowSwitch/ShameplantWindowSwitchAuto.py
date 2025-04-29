@@ -8,9 +8,10 @@ import codecs
 import objc
 from pathlib import Path
 from PyQt6.QtWidgets import QApplication, QWidget
+import subprocess
 import Quartz
 try:
-    from AppKit import NSWorkspace
+    from AppKit import NSWorkspace, NSScreen
     from Foundation import NSObject
 except ImportError:
     print("can't import AppKit -- maybe you're running python from homebrew?")
@@ -84,6 +85,7 @@ class AppEventListener(NSObject):
             y = info[1]
             width = info[2]
             height = info[3]
+            #print(f'{x}, {y}, {width}, {height}')
 
             y_basic_value = 0
             if dock_position == 0:
@@ -107,6 +109,82 @@ class AppEventListener(NSObject):
                     toggle_dock_script = 'tell application "System Events" to set the autohide of dock preferences to false'
 
                 os.system(f"osascript -e '{toggle_dock_script}'")
+
+            mouse_location = Quartz.CGEventGetLocation(Quartz.CGEventCreate(None))
+            mouse_x, mouse_y = int(mouse_location.x), int(mouse_location.y)
+
+            # 获取所有屏幕
+            max_displays = 100
+            active_displays = Quartz.CGGetActiveDisplayList(max_displays, None, None)[1]
+
+            # 计算鼠标在哪个屏幕
+            main_screen = NSScreen.mainScreen()
+            frame = main_screen.frame()
+            visible_frame = main_screen.visibleFrame()
+            self.dock_postion = codecs.open(pos_file, 'r', encoding='utf-8').read()
+            for display in active_displays:
+                bounds = Quartz.CGDisplayBounds(display)
+                x, y, w, h = int(bounds.origin.x), int(bounds.origin.y), int(bounds.size.width), int(bounds.size.height)
+
+                if x <= mouse_x < x + w and y <= mouse_y < y + h:
+                    screen_position = f"{display} ({w}x{h})"
+                    #print(screen_position)
+                    need_re_calculate = codecs.open(BasePath + "Screen2.txt", 'r', encoding='utf-8').read()
+                    if need_re_calculate == '1':
+                        try:
+                            if self.dock_postion == 'x':
+                                CMD = '''
+                                    on run argv
+                                        display notification (item 2 of argv) with title (item 1 of argv)
+                                    end run'''
+                                self.notify(CMD, "Shameplant: Dynaic Dock",
+                                            f"Please go to the Settings panel in the menu bar.")
+                            else:
+                                with open(BasePath + "Screen2.txt", 'w', encoding='utf-8') as f0:
+                                    f0.write('0')
+                                ScriptName = 'Relaunch Shameplant'
+                                shortcmd = """set myCommand to "shortcuts run \\"%s\\""
+                                    do shell script myCommand""" % ScriptName
+                                subprocess.call(['osascript', '-e', shortcmd])
+                        except Exception as e:
+                            # 发生异常时打印错误信息
+                            p = "程序发生异常:" + str(e)
+                            with open(BasePath + "Error.txt", 'a', encoding='utf-8') as f0:
+                                f0.write(p)
+                            with open(BasePath + "Screen2.txt", 'w', encoding='utf-8') as f0:
+                                f0.write('1')
+                    if need_re_calculate == '0':
+                        screen_position_old = codecs.open(BasePath + "Screen.txt", 'r', encoding='utf-8').read()
+                        if screen_position_old == '':
+                            pass
+                        else:
+                            if screen_position_old != screen_position:
+                                try:
+                                    if self.dock_postion == 'x':
+                                        CMD = '''
+                                            on run argv
+                                                display notification (item 2 of argv) with title (item 1 of argv)
+                                            end run'''
+                                        self.notify(CMD, "Shameplant: Dynaic Dock",
+                                                    f"Please go to the Settings panel in the menu bar.")
+                                    else:
+                                        with open(BasePath + "Screen2.txt", 'w', encoding='utf-8') as f0:
+                                            f0.write('0')
+                                        ScriptName = 'Relaunch Shameplant'
+                                        shortcmd = """set myCommand to "shortcuts run \\"%s\\""
+                                            do shell script myCommand""" % ScriptName
+                                        subprocess.call(['osascript', '-e', shortcmd])
+                                except Exception as e:
+                                    # 发生异常时打印错误信息
+                                    p = "程序发生异常:" + str(e)
+                                    print(p)
+                                    with open(BasePath + "Error.txt", 'a', encoding='utf-8') as f0:
+                                        f0.write(p)
+                                    with open(BasePath + "Screen2.txt", 'w', encoding='utf-8') as f0:
+                                        f0.write('1')
+                    with open(BasePath + "Screen.txt", 'w', encoding='utf-8') as f0:
+                        f0.write(screen_position)
+                    break
         except Exception as e:
             # 发生异常时打印错误信息
             p = "程序发生异常:" + str(e)
@@ -139,6 +217,10 @@ class AppEventListener(NSObject):
 
     # def app_relaunch(self):
     #     sys.exit(0)
+
+    # def restart_program(self):
+    #     subprocess.Popen([sys.executable] + sys.argv)
+    #     os._exit(0)  # 直接退出当前进程
 
 
 class window1(QWidget):
