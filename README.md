@@ -1,6 +1,6 @@
-# 🌿Shameplant: Auto Hide Your Dock
+# 🌿Shameplant: Dynamically Hide Your Dock
 
-![y3UcXWb](https://i.imgur.com/y3UcXWb.png)
+![r0mCpLR](https://i.imgur.com/r0mCpLR.png)
 
 Shameplant is a macOS menu bar app to hide dock when a window get close. You can also set the threshold. 
 
