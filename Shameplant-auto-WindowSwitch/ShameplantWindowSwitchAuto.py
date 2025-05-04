@@ -27,6 +27,27 @@ class AppEventListener(NSObject):
     """ 监听 macOS 前台应用变化，避免轮询消耗资源 """
 
     def init(self):
+        home_dir = str(Path.home())
+        tarname1 = "ShameplantAppPath"
+        fulldir1 = os.path.join(home_dir, tarname1)
+        if not os.path.exists(fulldir1):
+            os.mkdir(fulldir1)
+        tarname5 = "No.txt"
+        self.fulldir5 = os.path.join(fulldir1, tarname5)
+        if not os.path.exists(self.fulldir5):
+            with open(self.fulldir5, 'a', encoding='utf-8') as f0:
+                f0.write('')
+        tarname6 = "Always.txt"
+        self.fulldir6 = os.path.join(fulldir1, tarname6)
+        if not os.path.exists(self.fulldir6):
+            with open(self.fulldir6, 'a', encoding='utf-8') as f0:
+                f0.write('')
+        tarname7 = "Never.txt"
+        self.fulldir7 = os.path.join(fulldir1, tarname7)
+        if not os.path.exists(self.fulldir7):
+            with open(self.fulldir7, 'a', encoding='utf-8') as f0:
+                f0.write('')
+
         self = objc.super(AppEventListener, self).init()
         if self is None:
             return None
@@ -49,6 +70,34 @@ class AppEventListener(NSObject):
             app_name = active_app['NSApplicationName']
 
             if app_name == "loginwindow":
+                return
+
+            never_react = codecs.open(self.fulldir5, 'r', encoding='utf-8').read()
+            never_react_list = never_react.split('\n')
+            while '' in never_react_list:
+                never_react_list.remove('')
+
+            always_show = codecs.open(self.fulldir6, 'r', encoding='utf-8').read()
+            always_show_list = always_show.split('\n')
+            while '' in always_show_list:
+                always_show_list.remove('')
+
+            always_hide = codecs.open(self.fulldir7, 'r', encoding='utf-8').read()
+            always_hide_list = always_hide.split('\n')
+            while '' in always_hide_list:
+                always_hide_list.remove('')
+
+            if app_name in never_react_list:
+                return
+
+            if app_name in always_show_list:
+                toggle_dock_script = 'tell application "System Events" to set the autohide of dock preferences to false'
+                os.system(f"osascript -e '{toggle_dock_script}'")
+                return
+
+            if app_name in always_hide_list:
+                toggle_dock_script = 'tell application "System Events" to set the autohide of dock preferences to true'
+                os.system(f"osascript -e '{toggle_dock_script}'")
                 return
 
             # 读取 dock 位置 & 配置参数

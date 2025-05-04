@@ -9,7 +9,7 @@ import time
 
 from PyQt6.QtWidgets import (QWidget, QPushButton, QApplication,
 							 QLabel, QHBoxLayout, QVBoxLayout, QLineEdit,
-							 QSystemTrayIcon, QMenu, QDialog, QMenuBar, QCheckBox, QTextEdit, QComboBox)
+							 QSystemTrayIcon, QMenu, QDialog, QMenuBar, QCheckBox, QTextEdit, QComboBox, QListWidget, QFileDialog)
 from PyQt6.QtCore import Qt, QTimer, QThread, pyqtSignal
 from PyQt6.QtGui import QAction, QIcon, QColor
 import PyQt6.QtGui
@@ -131,7 +131,7 @@ class window_about(QWidget):  # 增加说明页面(About)
 		widg2.setLayout(blay2)
 
 		widg3 = QWidget()
-		lbl1 = QLabel('Version 0.0.9', self)
+		lbl1 = QLabel('Version 1.0.0', self)
 		blay3 = QHBoxLayout()
 		blay3.setContentsMargins(0, 0, 0, 0)
 		blay3.addStretch()
@@ -594,7 +594,7 @@ class window_update(QWidget):  # 增加更新页面（Check for Updates）
 
 	def initUI(self):  # 说明页面内信息
 
-		self.lbl = QLabel('Current Version: v0.0.9', self)
+		self.lbl = QLabel('Current Version: v1.0.0', self)
 		self.lbl.move(30, 45)
 
 		lbl0 = QLabel('Download Update:', self)
@@ -987,7 +987,7 @@ class window4(QWidget):  # Customization settings
 
 	def initUI(self):  # 设置窗口内布局
 		self.setUpMainWindow()
-		self.setFixedSize(500, 180)
+		self.setFixedSize(500, 870)
 		self.center()
 		self.setWindowTitle('Customization settings')
 		self.setFocus()
@@ -1021,6 +1021,21 @@ class window4(QWidget):  # Customization settings
 		if not os.path.exists(self.fulldir4):
 			with open(self.fulldir4, 'a', encoding='utf-8') as f0:
 				f0.write('0')
+		tarname5 = "No.txt"
+		self.fulldir5 = os.path.join(fulldir1, tarname5)
+		if not os.path.exists(self.fulldir5):
+			with open(self.fulldir5, 'a', encoding='utf-8') as f0:
+				f0.write('')
+		tarname6 = "Always.txt"
+		self.fulldir6 = os.path.join(fulldir1, tarname6)
+		if not os.path.exists(self.fulldir6):
+			with open(self.fulldir6, 'a', encoding='utf-8') as f0:
+				f0.write('')
+		tarname7 = "Never.txt"
+		self.fulldir7 = os.path.join(fulldir1, tarname7)
+		if not os.path.exists(self.fulldir7):
+			with open(self.fulldir7, 'a', encoding='utf-8') as f0:
+				f0.write('')
 
 		###
 
@@ -1062,6 +1077,146 @@ class window4(QWidget):  # Customization settings
 			self.checkBox1.setChecked(False)
 		self.checkBox1.clicked.connect(self.auto_launch)
 
+		###
+
+		lbl0 = QLabel("Don't react to:", self)
+
+		self.text_feed = QListWidget(self)
+		self.text_feed.setFixedHeight(200)
+		self.text_feed.itemSelectionChanged.connect(self.item_click_0)
+
+		self.btn0_1 = QPushButton('', self)
+		self.btn0_1.setFixedSize(15, 15)
+		btn0_1_path = BasePath + 'plus.png'
+		self.btn0_1.setStyleSheet('''
+			QPushButton{
+			border: transparent;
+			background-color: transparent;
+			border-image: url(%s);
+			}
+			QPushButton:pressed{
+			border: 1px outset grey;
+			background-color: #0085FF;
+			border-radius: 4px;
+			padding: 1px;
+			color: #FFFFFF
+			}
+			''' % btn0_1_path)
+		self.btn0_1.move(30, 320)
+
+		self.btn0_2 = QPushButton('', self)
+		self.btn0_2.setFixedSize(15, 15)
+		btn0_2_path = BasePath + 'minus.png'
+		self.btn0_2.setStyleSheet('''
+			QPushButton{
+			border: transparent;
+			background-color: transparent;
+			border-image: url(%s);
+			}
+			QPushButton:pressed{
+			border: 1px outset grey;
+			background-color: #0085FF;
+			border-radius: 4px;
+			padding: 1px;
+			color: #FFFFFF
+			}
+			''' % btn0_2_path)
+		self.btn0_2.move(55, 320)
+		self.btn0_2.setVisible(False)
+
+		###
+
+		lbl1 = QLabel("Always show Dock for:", self)
+
+		self.text_feed_1 = QListWidget(self)
+		self.text_feed_1.setFixedHeight(200)
+		self.text_feed_1.itemSelectionChanged.connect(self.item_click_1)
+
+		self.btn1_1 = QPushButton('', self)
+		self.btn1_1.setFixedSize(15, 15)
+		btn1_1_path = BasePath + 'plus.png'
+		self.btn1_1.setStyleSheet('''
+			QPushButton{
+			border: transparent;
+			background-color: transparent;
+			border-image: url(%s);
+			}
+			QPushButton:pressed{
+			border: 1px outset grey;
+			background-color: #0085FF;
+			border-radius: 4px;
+			padding: 1px;
+			color: #FFFFFF
+			}
+			''' % btn1_1_path)
+		self.btn1_1.move(30, 555)
+
+		self.btn1_2 = QPushButton('', self)
+		self.btn1_2.setFixedSize(15, 15)
+		btn1_2_path = BasePath + 'minus.png'
+		self.btn1_2.setStyleSheet('''
+			QPushButton{
+			border: transparent;
+			background-color: transparent;
+			border-image: url(%s);
+			}
+			QPushButton:pressed{
+			border: 1px outset grey;
+			background-color: #0085FF;
+			border-radius: 4px;
+			padding: 1px;
+			color: #FFFFFF
+			}
+			''' % btn1_2_path)
+		self.btn1_2.move(55, 555)
+		self.btn1_2.setVisible(False)
+
+		###
+
+		lbl2 = QLabel("Always hide Dock for:", self)
+
+		self.text_feed_2 = QListWidget(self)
+		self.text_feed_2.setFixedHeight(200)
+		self.text_feed_2.itemSelectionChanged.connect(self.item_click_2)
+
+		self.btn2_1 = QPushButton('', self)
+		self.btn2_1.setFixedSize(15, 15)
+		btn2_1_path = BasePath + 'plus.png'
+		self.btn2_1.setStyleSheet('''
+			QPushButton{
+			border: transparent;
+			background-color: transparent;
+			border-image: url(%s);
+			}
+			QPushButton:pressed{
+			border: 1px outset grey;
+			background-color: #0085FF;
+			border-radius: 4px;
+			padding: 1px;
+			color: #FFFFFF
+			}
+			''' % btn2_1_path)
+		self.btn2_1.move(30, 790)
+
+		self.btn2_2 = QPushButton('', self)
+		self.btn2_2.setFixedSize(15, 15)
+		btn2_2_path = BasePath + 'minus.png'
+		self.btn2_2.setStyleSheet('''
+			QPushButton{
+			border: transparent;
+			background-color: transparent;
+			border-image: url(%s);
+			}
+			QPushButton:pressed{
+			border: 1px outset grey;
+			background-color: #0085FF;
+			border-radius: 4px;
+			padding: 1px;
+			color: #FFFFFF
+			}
+			''' % btn2_2_path)
+		self.btn2_2.move(55, 790)
+
 		self.btn_1 = QPushButton('Save and relaunch', self)
 		self.btn_1.clicked.connect(self.save_state)
 		self.btn_1.setFixedSize(150, 20)
@@ -1088,6 +1243,18 @@ class window4(QWidget):  # Customization settings
 		vbox2.addWidget(self.checkBox1)
 		qw2.setLayout(vbox2)
 
+		qw4 = QWidget()
+		vbox4 = QVBoxLayout()
+		vbox4.setContentsMargins(0, 0, 0, 0)
+		vbox4.addWidget(lbl0)
+		vbox4.addWidget(self.text_feed)
+		vbox4.addWidget(lbl1)
+		vbox4.addWidget(self.text_feed_1)
+		vbox4.addWidget(lbl2)
+		vbox4.addWidget(self.text_feed_2)
+		vbox4.addStretch()
+		qw4.setLayout(vbox4)
+
 		qw3 = QWidget()
 		vbox3 = QHBoxLayout()
 		vbox3.setContentsMargins(0, 0, 0, 0)
@@ -1101,8 +1268,211 @@ class window4(QWidget):  # Customization settings
 		vboxx.addWidget(qw0)
 		vboxx.addWidget(qw1)
 		vboxx.addWidget(qw2)
+		vboxx.addWidget(qw4)
 		vboxx.addWidget(qw3)
 		self.setLayout(vboxx)
+
+		self.btn0_1.raise_()
+		self.btn0_2.raise_()
+		self.btn1_1.raise_()
+		self.btn1_2.raise_()
+		self.btn2_1.raise_()
+		self.btn2_2.raise_()
+
+		never_react = codecs.open(self.fulldir5, 'r', encoding='utf-8').read()
+		never_react_list = never_react.split('\n')
+		while '' in never_react_list:
+			never_react_list.remove('')
+		self.text_feed.clear()
+		self.text_feed.addItems(never_react_list)
+
+		always_show = codecs.open(self.fulldir6, 'r', encoding='utf-8').read()
+		always_show_list = always_show.split('\n')
+		while '' in always_show_list:
+			always_show_list.remove('')
+		self.text_feed_1.clear()
+		self.text_feed_1.addItems(always_show_list)
+
+		never_show = codecs.open(self.fulldir7, 'r', encoding='utf-8').read()
+		never_show_list = never_show.split('\n')
+		while '' in never_show_list:
+			never_show_list.remove('')
+		self.text_feed_2.clear()
+		self.text_feed_2.addItems(never_show_list)
+
+	def item_click_0(self):
+		selected_items = self.text_feed.selectedItems()  # 获取已选择的项
+		if len(selected_items) > 0:
+			pass
+			self.btn0_2.setVisible(True)
+		else:
+			pass
+			self.btn0_2.setVisible(False)
+
+	def item_click_1(self):
+		selected_items = self.text_feed_1.selectedItems()  # 获取已选择的项
+		if len(selected_items) > 0:
+			pass
+			self.btn1_2.setVisible(True)
+		else:
+			pass
+			self.btn1_2.setVisible(False)
+
+	def item_click_2(self):
+		selected_items = self.text_feed_2.selectedItems()  # 获取已选择的项
+		if len(selected_items) > 0:
+			pass
+			self.btn2_2.setVisible(True)
+		else:
+			pass
+			self.btn2_2.setVisible(False)
+
+	def add_item_0(self):
+		fj = QFileDialog.getOpenFileName(self, "Open File", str(Path("/Applications")), "Application (*.app)")
+		if fj[0] != '':
+			pattern2 = re.compile(r'([^/]+)\.app$')
+			result = ''.join(pattern2.findall(fj[0])) + '\n'
+			never_react = codecs.open(self.fulldir5, 'r', encoding='utf-8').read()
+			never_react_list = never_react.split('\n')
+			while '' in never_react_list:
+				never_react_list.remove('')
+			if result.rstrip('\n') not in never_react_list:
+				with open(self.fulldir5, 'a', encoding='utf-8') as f0:
+					f0.write(result)
+				never_react = codecs.open(self.fulldir5, 'r', encoding='utf-8').read().lstrip('\n')
+				with open(self.fulldir5, 'w', encoding='utf-8') as f0:
+					f0.write(never_react)
+			never_react = codecs.open(self.fulldir5, 'r', encoding='utf-8').read()
+			never_react_list = never_react.split('\n')
+			while '' in never_react_list:
+				never_react_list.remove('')
+			self.text_feed.clear()
+			self.text_feed.addItems(never_react_list)
+
+	def delete_item_0(self):
+		selected_items = self.text_feed.selectedItems()
+		if len(selected_items) > 0:
+			index = 0
+			text = ''
+			for item in selected_items:
+				index = self.text_feed.row(item)  # 获取选中项的索引
+				text = item.text()
+			output_list = []
+			for i in range(self.text_feed.count()):
+				output_list.append(self.text_feed.item(i).text())
+			while '' in output_list:
+				output_list.remove('')
+			if text != '':
+				deletelist = []
+				deletelist.append(output_list[index])
+				output_list.remove(deletelist[0])
+				#set show
+				self.text_feed.clear()
+				self.text_feed.addItems(output_list)
+				# write to local
+				output = '\n'.join(output_list) + '\n'
+				with open(self.fulldir5, 'w', encoding='utf-8') as f0:
+					f0.write('')
+				with open(self.fulldir5, 'w', encoding='utf-8') as f0:
+					f0.write(output)
+
+	def add_item_1(self):
+		fj = QFileDialog.getOpenFileName(self, "Open File", str(Path("/Applications")), "Application (*.app)")
+		if fj[0] != '':
+			pattern2 = re.compile(r'([^/]+)\.app$')
+			result = ''.join(pattern2.findall(fj[0])) + '\n'
+			always_show = codecs.open(self.fulldir6, 'r', encoding='utf-8').read()
+			always_show_list = always_show.split('\n')
+			while '' in always_show_list:
+				always_show_list.remove('')
+			if result.rstrip('\n') not in always_show_list:
+				with open(self.fulldir6, 'a', encoding='utf-8') as f0:
+					f0.write(result)
+				always_show = codecs.open(self.fulldir6, 'r', encoding='utf-8').read().lstrip('\n')
+				with open(self.fulldir6, 'w', encoding='utf-8') as f0:
+					f0.write(always_show)
+			always_show = codecs.open(self.fulldir6, 'r', encoding='utf-8').read()
+			always_show_list = always_show.split('\n')
+			while '' in always_show_list:
+				always_show_list.remove('')
+			self.text_feed_1.clear()
+			self.text_feed_1.addItems(always_show_list)
+
+	def delete_item_1(self):
+		selected_items = self.text_feed_1.selectedItems()
+		if len(selected_items) > 0:
+			index = 0
+			text = ''
+			for item in selected_items:
+				index = self.text_feed_1.row(item)  # 获取选中项的索引
+				text = item.text()
+			output_list = []
+			for i in range(self.text_feed_1.count()):
+				output_list.append(self.text_feed_1.item(i).text())
+			while '' in output_list:
+				output_list.remove('')
+			if text != '':
+				deletelist = []
+				deletelist.append(output_list[index])
+				output_list.remove(deletelist[0])
+				#set show
+				self.text_feed_1.clear()
+				self.text_feed_1.addItems(output_list)
+				# write to local
+				output = '\n'.join(output_list) + '\n'
+				with open(self.fulldir6, 'w', encoding='utf-8') as f0:
+					f0.write('')
+				with open(self.fulldir6, 'w', encoding='utf-8') as f0:
+					f0.write(output)
+
+	def add_item_2(self):
+		fj = QFileDialog.getOpenFileName(self, "Open File", str(Path("/Applications")), "Application (*.app)")
+		if fj[0] != '':
+			pattern2 = re.compile(r'([^/]+)\.app$')
+			result = ''.join(pattern2.findall(fj[0])) + '\n'
+			never_show = codecs.open(self.fulldir7, 'r', encoding='utf-8').read()
+			never_show_list = never_show.split('\n')
+			while '' in never_show_list:
+				never_show_list.remove('')
+			if result.rstrip('\n') not in never_show_list:
+				with open(self.fulldir7, 'a', encoding='utf-8') as f0:
+					f0.write(result)
+				never_show = codecs.open(self.fulldir7, 'r', encoding='utf-8').read().lstrip('\n')
+				with open(self.fulldir7, 'w', encoding='utf-8') as f0:
+					f0.write(never_show)
+			never_show = codecs.open(self.fulldir7, 'r', encoding='utf-8').read()
+			never_show_list = never_show.split('\n')
+			while '' in never_show_list:
+				never_show_list.remove('')
+			self.text_feed_2.clear()
+			self.text_feed_2.addItems(never_show_list)
+
+	def delete_item_2(self):
+		selected_items = self.text_feed_2.selectedItems()
+		if len(selected_items) > 0:
+			index = 0
+			text = ''
+			for item in selected_items:
+				index = self.text_feed_2.row(item)  # 获取选中项的索引
+				text = item.text()
+			output_list = []
+			for i in range(self.text_feed_2.count()):
+				output_list.append(self.text_feed_2.item(i).text())
+			while '' in output_list:
+				output_list.remove('')
+			if text != '':
+				deletelist = []
+				deletelist.append(output_list[index])
+				output_list.remove(deletelist[0])
+				#set show
+				self.text_feed_2.clear()
+				self.text_feed_2.addItems(output_list)
+				# write to local
+				output = '\n'.join(output_list) + '\n'
+				with open(self.fulldir7, 'w', encoding='utf-8') as f0:
+					f0.write('')
+				with open(self.fulldir7, 'w', encoding='utf-8') as f0:
+					f0.write(output)
 
 	def position_change(self, i):
 		if i == 0:
@@ -1324,6 +1694,12 @@ if __name__ == '__main__':
 			btna4.triggered.connect(w3.activate)
 			btna5.triggered.connect(w4.activate)
 			btna6.triggered.connect(w4.totalquit)
+			w4.btn0_1.clicked.connect(w4.add_item_0)
+			w4.btn0_2.clicked.connect(w4.delete_item_0)
+			w4.btn1_1.clicked.connect(w4.add_item_1)
+			w4.btn1_2.clicked.connect(w4.delete_item_1)
+			w4.btn2_1.clicked.connect(w4.add_item_2)
+			w4.btn2_2.clicked.connect(w4.delete_item_2)
 			quit.triggered.connect(w4.totalquit)
 			app.setStyleSheet(style_sheet_ori)
 			app.exec()
