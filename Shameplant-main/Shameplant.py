@@ -818,7 +818,7 @@ class Slide(QWidget): # guide page
 			self.gif_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
 			layout.addWidget(self.gif_label)
 			# 设置定时器：3 秒后隐藏图片
-			QTimer.singleShot(4200, self.hide_image)
+			QTimer.singleShot(5200, self.hide_image)
 
 		# 按钮（仅当 show_button=True 时）
 		if show_button:
@@ -998,7 +998,7 @@ class Slide(QWidget): # guide page
 	def handle_feature_c(self):
 		to = "sweeter.02.implant@icloud.com"
 		subject = "[Feedback-Shameplant]"
-		body = "\n\nShameplant v1.0.1"
+		body = "\n\nShameplant v1.0.2"
 		# 对 subject 和 body 进行 URL 编码
 		subject_encoded = urllib.parse.quote(subject)
 		body_encoded = urllib.parse.quote(body)
