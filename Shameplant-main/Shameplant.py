@@ -9,9 +9,9 @@ import time
 
 from PyQt6.QtWidgets import (QWidget, QPushButton, QApplication,
 							 QLabel, QHBoxLayout, QVBoxLayout, QLineEdit,
-							 QSystemTrayIcon, QMenu, QDialog, QMenuBar, QCheckBox, QTextEdit, QComboBox, QListWidget, QFileDialog)
-from PyQt6.QtCore import Qt, QTimer, QThread, pyqtSignal
-from PyQt6.QtGui import QAction, QIcon, QColor
+							 QSystemTrayIcon, QMenu, QDialog, QMenuBar, QCheckBox, QTextEdit, QComboBox, QListWidget, QFileDialog, QGraphicsOpacityEffect, QStackedWidget)
+from PyQt6.QtCore import Qt, QTimer, QThread, pyqtSignal, QSize, QUrl, QPropertyAnimation, QEasingCurve
+from PyQt6.QtGui import QAction, QIcon, QColor, QMovie, QDesktopServices, QPixmap
 import PyQt6.QtGui
 import webbrowser
 import sys
@@ -26,8 +26,13 @@ import requests
 import re
 import os
 from pathlib import Path
+import objc
+import Quartz
+from pynput import mouse
+import urllib.parse
 try:
 	from AppKit import NSWorkspace, NSScreen
+	from Foundation import NSObject
 except ImportError:
 	print("can't import AppKit -- maybe you're running python from homebrew?")
 	print("try running with /usr/bin/python instead")
@@ -68,7 +73,13 @@ menu.addAction(action2)
 action1 = QAction("ℹ️ About")
 menu.addAction(action1)
 
+action9 = QAction("🔤 Guide & Support")
+menu.addAction(action9)
+
 menu.addSeparator()
+
+action8 = QAction("🔁 Restart")
+menu.addAction(action8)
 
 # Add a Quit option to the menu.
 quit = QAction("Quit")
@@ -131,7 +142,7 @@ class window_about(QWidget):  # 增加说明页面(About)
 		widg2.setLayout(blay2)
 
 		widg3 = QWidget()
-		lbl1 = QLabel('Version 1.0.0', self)
+		lbl1 = QLabel('Version 1.0.1', self)
 		blay3 = QHBoxLayout()
 		blay3.setContentsMargins(0, 0, 0, 0)
 		blay3.addStretch()
@@ -594,7 +605,7 @@ class window_update(QWidget):  # 增加更新页面（Check for Updates）
 
 	def initUI(self):  # 说明页面内信息
 
-		self.lbl = QLabel('Current Version: v1.0.0', self)
+		self.lbl = QLabel('Current Version: v1.0.1', self)
 		self.lbl.move(30, 45)
 
 		lbl0 = QLabel('Download Update:', self)
@@ -686,6 +697,414 @@ class window_update(QWidget):  # 增加更新页面（Check for Updates）
 			self.lbl2.adjustSize()
 
 
+class Slide(QWidget): # guide page
+	def __init__(self, text, color, image_path=None, gif_path=None, acc_button=False, font=24, show_button=False, acc_button2=False):
+		super().__init__()
+		self.setStyleSheet(f"background-color: {color};border-radius:4px;")
+		w3 = QWidget()
+		layout = QVBoxLayout()
+		layout.setSpacing(20)  # 设置控件间距为 0
+		layout.setContentsMargins(0, 0, 0, 0)  # 设置边距为 0
+
+		# 图片部分
+		if image_path:
+			self.image_label = QLabel()
+			pixmap = QPixmap(image_path).scaledToHeight(300)
+			self.image_label.setPixmap(pixmap)
+			self.image_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+			layout.addWidget(self.image_label)
+
+		# Gif part
+		if gif_path:
+			self.gif_label = QLabel()
+			#self.gif_label.setFixedWidth(250)
+			movie = QMovie(gif_path)
+			movie.setScaledSize(QSize(922, 264))
+			self.gif_label.setMovie(movie)
+			#movie.setSpeed(50)
+			movie.start()  # 一定要启动！
+			self.gif_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+			layout.addWidget(self.gif_label)
+			# 设置定时器：3 秒后隐藏图片
+			QTimer.singleShot(4200, self.hide_image)
+
+		# 按钮（仅当 show_button=True 时）
+		if show_button:
+			button_layout = QHBoxLayout()
+
+			button_layout.addStretch()
+
+			btn1 = QPushButton("Documentation📑")
+			btn1.setFixedWidth(200)
+			btn1.clicked.connect(self.handle_feature_a)
+			button_layout.addWidget(btn1)
+			btn1.setStyleSheet('''
+				QPushButton{
+				border: 1px outset grey;
+				background-color: #FFFFFF;
+				border-radius: 4px;
+				padding: 1px;
+				color: #000000
+			}
+				QPushButton:pressed{
+					border: 1px outset grey;
+					background-color: #0085FF;
+					border-radius: 4px;
+					padding: 1px;
+					color: #FFFFFF
+			}''')
+
+			button_layout.addStretch()
+
+			btn2 = QPushButton("Tip me!❤️")
+			btn2.setFixedWidth(200)
+			btn2.clicked.connect(self.handle_feature_b)
+			button_layout.addWidget(btn2)
+			btn2.setStyleSheet('''
+				QPushButton{
+				border: 1px outset grey;
+				background-color: #FFFFFF;
+				border-radius: 4px;
+				padding: 1px;
+				color: #000000
+			}
+				QPushButton:pressed{
+					border: 1px outset grey;
+					background-color: #0085FF;
+					border-radius: 4px;
+					padding: 1px;
+					color: #FFFFFF
+			}''')
+
+			button_layout.addStretch()
+
+			btn3 = QPushButton("Bugs? Email me💌")
+			btn3.setFixedWidth(200)
+			btn3.clicked.connect(self.handle_feature_c)
+			button_layout.addWidget(btn3)
+			btn3.setStyleSheet('''
+				QPushButton{
+				border: 1px outset grey;
+				background-color: #FFFFFF;
+				border-radius: 4px;
+				padding: 1px;
+				color: #000000
+			}
+				QPushButton:pressed{
+					border: 1px outset grey;
+					background-color: #0085FF;
+					border-radius: 4px;
+					padding: 1px;
+					color: #FFFFFF
+			}''')
+
+			button_layout.addStretch()
+
+			layout.addLayout(button_layout)
+
+		# 按钮（仅当 acc_button=True 时）
+		if acc_button:
+			btn4 = QPushButton("Open Accessibility")
+			btn4.setFixedWidth(200)
+			btn4.clicked.connect(self.handle_feature_d)
+			btn4.setStyleSheet('''
+				QPushButton{
+				border: 1px outset grey;
+				background-color: #FFFFFF;
+				border-radius: 4px;
+				padding: 1px;
+				color: #000000
+			}
+				QPushButton:pressed{
+					border: 1px outset grey;
+					background-color: #0085FF;
+					border-radius: 4px;
+					padding: 1px;
+					color: #FFFFFF
+			}''')
+			acc_layout = QHBoxLayout()
+			acc_layout.setContentsMargins(0, 0, 0, 0)
+			acc_layout.addStretch()
+			acc_layout.addWidget(btn4)
+			acc_layout.addStretch()
+			layout.addLayout(acc_layout)
+
+		# acc2
+		if acc_button2:
+			btn5 = QPushButton("Open Input Monitoring")
+			btn5.setFixedWidth(200)
+			btn5.clicked.connect(self.handle_feature_e)
+			btn5.setStyleSheet('''
+				QPushButton{
+				border: 1px outset grey;
+				background-color: #FFFFFF;
+				border-radius: 4px;
+				padding: 1px;
+				color: #000000
+			}
+				QPushButton:pressed{
+					border: 1px outset grey;
+					background-color: #0085FF;
+					border-radius: 4px;
+					padding: 1px;
+					color: #FFFFFF
+			}''')
+			acc_layout2 = QHBoxLayout()
+			acc_layout2.setContentsMargins(0, 0, 0, 0)
+			acc_layout2.addStretch()
+			acc_layout2.addWidget(btn5)
+			acc_layout2.addStretch()
+			layout.addLayout(acc_layout2)
+
+		# 文字部分
+		self.label = QLabel(text)
+		self.label.setStyleSheet(f"font-size: {font}px; color: black; font: bold Helvetica;")
+		self.label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+		if gif_path:
+			self.label.setVisible(False)
+
+			# 添加不透明度效果
+			self.opacity_effect = QGraphicsOpacityEffect()
+			self.label.setGraphicsEffect(self.opacity_effect)
+			self.opacity_effect.setOpacity(0)  # 初始为完全透明
+
+			# 创建动画
+			self.animation = QPropertyAnimation(self.opacity_effect, b"opacity")
+			self.animation.setDuration(2000)  # 动画时长：2000 毫秒
+			self.animation.setStartValue(0)
+			self.animation.setEndValue(1)
+			self.animation.setEasingCurve(QEasingCurve.Type.InOutQuad)
+
+		#layout.addStretch()
+		layout.addWidget(self.label)
+
+		w3.setLayout(layout)
+		w3.setStyleSheet('''
+			border: 1px solid white;
+			background: white;
+			border-radius: 9px;
+		''')
+
+		blayend = QHBoxLayout()
+		blayend.setContentsMargins(0, 0, 0, 0)
+		blayend.addWidget(w3)
+		self.setLayout(blayend)
+
+	def hide_image(self):
+		if self.gif_label:
+			self.gif_label.hide()
+			self.label.setVisible(True)# 或者 self.image_label.deleteLater() 完全移除
+			self.animation.start()
+
+	def handle_feature_a(self):
+		webbrowser.open('https://github.com/Ryan-the-hito/Shameplant')
+
+	def handle_feature_b(self):
+		w1.show()
+
+
+	def handle_feature_c(self):
+		to = "sweeter.02.implant@icloud.com"
+		subject = "[Feedback-Shameplant]"
+		body = "\n\nShameplant v1.0.1"
+		# 对 subject 和 body 进行 URL 编码
+		subject_encoded = urllib.parse.quote(subject)
+		body_encoded = urllib.parse.quote(body)
+
+		# 构造 mailto 链接
+		mailto_link = f"mailto:{to}?subject={subject_encoded}&body={body_encoded}"
+
+		# 打开默认邮件客户端
+		QDesktopServices.openUrl(QUrl(mailto_link))
+
+	def handle_feature_d(self):
+		QDesktopServices.openUrl(QUrl("x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility"))
+
+	def handle_feature_e(self):
+		toggle_dock_script = '''
+			tell application "System Settings"
+				quit
+			end tell
+			delay 1
+			tell application "System Settings"
+				activate
+			end tell
+			delay 1
+			tell application "System Events"
+				tell process "System Settings"
+					click menu item "Privacy & Security" of menu "View" of menu bar 1
+					delay 1
+					click button 8 of group 4 of scroll area 1 of group 1 of group 2 of splitter group 1 of group 1 of window "Privacy & Security" of application process "System Settings" of application "System Events"
+				end tell
+			end tell
+		'''
+		# 运行AppleScript
+		subprocess.run(["osascript", "-e", toggle_dock_script])
+
+
+class SliderWindow(QWidget): # inside pages of guidance
+	def __init__(self):
+		super().__init__()
+		self.setWindowFlags(Qt.WindowType.FramelessWindowHint | Qt.WindowType.WindowStaysOnTopHint)
+		self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground, True)
+		self.resize(960, 550)
+
+		self.stack = QStackedWidget()
+		gifpath = BasePath + 'dock9.gif'
+		imagepath1 = BasePath + 'access1.png'
+		imagepath2 = BasePath + 'access2.png'
+		imagepath3 = BasePath + 'access3.png'
+		imagepath4 = BasePath + 'prompte.png'
+		self.slides = [
+			Slide("Welcome to Shameplant!", "white", None, f'{gifpath}', False, 50),
+			Slide("Allow automation", "white", f'{imagepath1}', None, False),
+			Slide("Set up Accessibility", "white", f'{imagepath2}', None, True),
+			Slide("Set up Input Monitoring", "white", f'{imagepath3}', None, False, 24, False, True),
+			Slide("For more apps and info...", "white", f'{imagepath4}', None, False, 24, True),
+			Slide("Thank you for using Shameplant! \n Let's get started!", "white", None, None, False, 45),
+		]
+
+		for slide in self.slides:
+			self.stack.addWidget(slide)
+
+		# 页码圆点
+		self.dots = [QLabel("●") for _ in self.slides]
+		for dot in self.dots:
+			dot.setStyleSheet("font-size: 16px; color: lightgray;")
+		self.update_dots(0)
+
+		dots_layout = QHBoxLayout()
+		dots_layout.setAlignment(Qt.AlignmentFlag.AlignCenter)
+		for dot in self.dots:
+			dots_layout.addWidget(dot)
+
+		# 翻页按钮
+		self.prev_btn = QPushButton("←")
+		self.prev_btn.setFixedWidth(100)
+		self.next_btn = QPushButton("→")
+		self.next_btn.setFixedWidth(100)
+		self.prev_btn.clicked.connect(self.go_prev)
+		self.next_btn.clicked.connect(self.go_next)
+		self.prev_btn.setStyleSheet('''
+			QPushButton{
+			border: 1px outset grey;
+			background-color: #FFFFFF;
+			border-radius: 4px;
+			padding: 1px;
+			color: #000000
+		}
+			QPushButton:pressed{
+				border: 1px outset grey;
+				background-color: #0085FF;
+				border-radius: 4px;
+				padding: 1px;
+				color: #FFFFFF
+		}''')
+		self.next_btn.setStyleSheet('''
+			QPushButton{
+			border: 1px outset grey;
+			background-color: #FFFFFF;
+			border-radius: 4px;
+			padding: 1px;
+			color: #000000
+		}
+			QPushButton:pressed{
+				border: 1px outset grey;
+				background-color: #0085FF;
+				border-radius: 4px;
+				padding: 1px;
+				color: #FFFFFF
+		}''')
+
+		btn_layout = QHBoxLayout()
+		btn_layout.addStretch()
+		btn_layout.addWidget(self.prev_btn)
+		btn_layout.addStretch()
+		btn_layout.addWidget(self.next_btn)
+		btn_layout.addStretch()
+
+		w3 = QWidget()
+		blay3 = QVBoxLayout()
+		blay3.setContentsMargins(0, 0, 0, 0)
+		blay3.addStretch()
+		blay3.addWidget(self.stack)
+		blay3.addLayout(dots_layout)
+		blay3.addLayout(btn_layout)
+		blay3.addStretch()
+		w3.setLayout(blay3)
+		w3.setStyleSheet('''
+			border: 1px solid white;
+			background: white;
+			border-radius: 9px;
+		''')
+
+		layout = QVBoxLayout()
+		layout.setContentsMargins(0, 0, 0, 0)
+		layout.addWidget(w3)
+		self.setLayout(layout)
+
+		self.current_index = 0
+
+	def update_dots(self, index):
+		for i, dot in enumerate(self.dots):
+			color = "black" if i == index else "lightgray"
+			dot.setStyleSheet(f"font-size: 16px; color: {color};")
+
+	def slide_to(self, new_index):
+		if new_index < 0 or new_index >= self.stack.count():
+			home_dir = str(Path.home())
+			tarname1 = "ShameplantAppPath"
+			fulldir1 = os.path.join(home_dir, tarname1)
+			if not os.path.exists(fulldir1):
+				os.mkdir(fulldir1)
+			tarname8 = "New.txt"
+			self.fulldir8 = os.path.join(fulldir1, tarname8)
+			if not os.path.exists(self.fulldir8):
+				with open(self.fulldir8, 'a', encoding='utf-8') as f0:
+					f0.write('0')
+			with open(self.fulldir8, 'w', encoding='utf-8') as f0:
+				f0.write('1')
+			self.close()
+		else:
+			current_widget = self.stack.currentWidget()
+			next_widget = self.stack.widget(new_index)
+
+			direction = -1 if new_index > self.current_index else 1
+			offset = self.stack.width() * direction
+
+			next_widget.setGeometry(self.stack.geometry().translated(offset, 0))
+			next_widget.show()
+
+			anim_current = QPropertyAnimation(current_widget, b"geometry")
+			anim_next = QPropertyAnimation(next_widget, b"geometry")
+
+			rect = self.stack.geometry()
+
+			anim_current.setDuration(300)
+			anim_current.setStartValue(rect)
+			anim_current.setEndValue(rect.translated(-offset, 0))
+
+			anim_next.setDuration(300)
+			anim_next.setStartValue(rect.translated(offset, 0))
+			anim_next.setEndValue(rect)
+
+			anim_current.setEasingCurve(QEasingCurve.Type.OutCubic)
+			anim_next.setEasingCurve(QEasingCurve.Type.OutCubic)
+
+			anim_current.start()
+			anim_next.start()
+
+			self.stack.setCurrentIndex(new_index)
+			self.current_index = new_index
+			self.update_dots(new_index)
+
+	def go_next(self):
+		self.slide_to(self.current_index + 1)
+
+	def go_prev(self):
+		self.slide_to(self.current_index - 1)
+
+
 class TimerThread(QThread):
 	tick = pyqtSignal()  # 用于向主线程发信号
 
@@ -707,6 +1126,300 @@ class TimerThread(QThread):
 			self.timer.stop()
 		self.quit()  # 结束事件循环
 		self.wait()  # 等待线程安全退出
+
+
+class AppEventListener(NSObject): # WindowSwitchAuto
+	""" 监听 macOS 前台应用变化，避免轮询消耗资源 """
+
+	def init(self):
+		home_dir = str(Path.home())
+		tarname1 = "ShameplantAppPath"
+		fulldir1 = os.path.join(home_dir, tarname1)
+		if not os.path.exists(fulldir1):
+			os.mkdir(fulldir1)
+		tarname5 = "No.txt"
+		self.fulldir5 = os.path.join(fulldir1, tarname5)
+		if not os.path.exists(self.fulldir5):
+			with open(self.fulldir5, 'a', encoding='utf-8') as f0:
+				f0.write('')
+		tarname6 = "Always.txt"
+		self.fulldir6 = os.path.join(fulldir1, tarname6)
+		if not os.path.exists(self.fulldir6):
+			with open(self.fulldir6, 'a', encoding='utf-8') as f0:
+				f0.write('')
+		tarname7 = "Never.txt"
+		self.fulldir7 = os.path.join(fulldir1, tarname7)
+		if not os.path.exists(self.fulldir7):
+			with open(self.fulldir7, 'a', encoding='utf-8') as f0:
+				f0.write('')
+
+		self = objc.super(AppEventListener, self).init()
+		if self is None:
+			return None
+
+		nc = NSWorkspace.sharedWorkspace().notificationCenter()
+		nc.addObserver_selector_name_object_(
+			self, objc.selector(self.app_changed_, signature=b"v@:@"),
+			"NSWorkspaceDidActivateApplicationNotification", None
+		)
+		# nc.addObserver_selector_name_object_(
+		#	 self, objc.selector(self.app_relaunch, signature=b"v@:@"),
+		#	 "NSApplicationDidChangeScreenParametersNotification", None  # 监听屏幕变化
+		# )
+		return self
+
+	def stop_listening(self):
+		nc = NSWorkspace.sharedWorkspace().notificationCenter()
+		nc.removeObserver_(self)
+
+	def app_changed_(self, sender, notification):
+		try:
+			# 当前台应用变化时，自动调整 Dock
+			active_app = NSWorkspace.sharedWorkspace().activeApplication()
+			app_name = active_app['NSApplicationName']
+
+			if app_name == "loginwindow":
+				return
+
+			never_react = codecs.open(self.fulldir5, 'r', encoding='utf-8').read()
+			never_react_list = never_react.split('\n')
+			while '' in never_react_list:
+				never_react_list.remove('')
+
+			always_show = codecs.open(self.fulldir6, 'r', encoding='utf-8').read()
+			always_show_list = always_show.split('\n')
+			while '' in always_show_list:
+				always_show_list.remove('')
+
+			always_hide = codecs.open(self.fulldir7, 'r', encoding='utf-8').read()
+			always_hide_list = always_hide.split('\n')
+			while '' in always_hide_list:
+				always_hide_list.remove('')
+
+			if app_name in never_react_list:
+				return
+
+			if app_name in always_show_list:
+				toggle_dock_script = 'tell application "System Events" to set the autohide of dock preferences to false'
+				os.system(f"osascript -e '{toggle_dock_script}'")
+				return
+
+			if app_name in always_hide_list:
+				toggle_dock_script = 'tell application "System Events" to set the autohide of dock preferences to true'
+				os.system(f"osascript -e '{toggle_dock_script}'")
+				return
+
+			# 读取 dock 位置 & 配置参数
+			home_dir = str(Path.home())
+			settings_dir = os.path.join(home_dir, "ShameplantAppPath")
+			pos_file = os.path.join(settings_dir, "Position.txt")
+			dist_file = os.path.join(settings_dir, "Distance.txt")
+			core_file = os.path.join(BasePath, "core_value.txt")
+			basic_file = os.path.join(BasePath, "menu_height.txt")
+
+			if not os.path.exists(pos_file) or not os.path.exists(dist_file) or not os.path.exists(core_file):
+				return
+
+			dock_position = int(codecs.open(pos_file, 'r', encoding='utf-8').read().strip())
+			threshold = int(codecs.open(dist_file, 'r', encoding='utf-8').read().strip())
+			core_value = int(codecs.open(core_file, 'r', encoding='utf-8').read().strip())
+			basic_value = int(codecs.open(basic_file, 'r', encoding='utf-8').read().strip())
+
+			# 获取当前前台应用的应用程序标识符（PID）
+			#pid = self.get_pid_psutil(app_name)
+
+			# 使用 Accessibility API 获取该应用的窗口信息
+			info = self.get_app_window_info(app_name)
+			if info is None:
+				time.sleep(0.5)
+				try:
+					info = self.get_app_window_info(app_name)
+				except Exception as e:
+					# 发生异常时打印错误信息
+					p = "程序发生异常: info is None" + str(e)
+					with open(BasePath + "Error.txt", 'a', encoding='utf-8') as f0:
+						f0.write(p)
+			x = info[0]
+			y = info[1]
+			width = info[2]
+			height = info[3]
+			#print(f'{x}, {y}, {width}, {height}')
+
+			y_basic_value = 0
+			if dock_position == 0:
+				y_basic_value = basic_value - 1
+			# 仅对可见窗口做出反应
+			if y > y_basic_value and width > 0 and height > 0:
+				compare_value = threshold
+				if dock_position == 0:
+					compare_value = int(y) + int(height) + threshold
+				if dock_position == 1:
+					compare_value = int(x) - threshold
+				if dock_position == 2:
+					compare_value = int(x) + int(width) + threshold
+
+				# 仅在 dock 状态需要变化时执行 AppleScript，减少 CPU 消耗
+				if (dock_position == 0 and compare_value >= core_value) or \
+						(dock_position == 1 and compare_value <= core_value) or \
+						(dock_position == 2 and compare_value >= core_value):
+					toggle_dock_script = 'tell application "System Events" to set the autohide of dock preferences to true'
+				else:
+					toggle_dock_script = 'tell application "System Events" to set the autohide of dock preferences to false'
+
+				os.system(f"osascript -e '{toggle_dock_script}'")
+
+			mouse_location = Quartz.CGEventGetLocation(Quartz.CGEventCreate(None))
+			mouse_x, mouse_y = int(mouse_location.x), int(mouse_location.y)
+
+			# 获取所有屏幕
+			max_displays = 100
+			active_displays = Quartz.CGGetActiveDisplayList(max_displays, None, None)[1]
+
+			# 计算鼠标在哪个屏幕
+			main_screen = NSScreen.mainScreen()
+			frame = main_screen.frame()
+			visible_frame = main_screen.visibleFrame()
+			self.dock_postion = codecs.open(pos_file, 'r', encoding='utf-8').read()
+			for display in active_displays:
+				bounds = Quartz.CGDisplayBounds(display)
+				x, y, w, h = int(bounds.origin.x), int(bounds.origin.y), int(bounds.size.width), int(bounds.size.height)
+
+				if x <= mouse_x < x + w and y <= mouse_y < y + h:
+					screen_position = f"{display} ({w}x{h})"
+					#print(screen_position)
+					need_re_calculate = codecs.open(BasePath + "Screen2.txt", 'r', encoding='utf-8').read()
+					if need_re_calculate == '1':
+						try:
+							if self.dock_postion == 'x':
+								CMD = '''
+									on run argv
+										display notification (item 2 of argv) with title (item 1 of argv)
+									end run'''
+								self.notify(CMD, "Shameplant: Dynaic Dock",
+											f"Please go to the Settings panel in the menu bar.")
+							else:
+								with open(BasePath + "Screen2.txt", 'w', encoding='utf-8') as f0:
+									f0.write('0')
+								os.execv(sys.executable, [sys.executable, __file__])
+						except Exception as e:
+							# 发生异常时打印错误信息
+							p = "程序发生异常:" + str(e)
+							with open(BasePath + "Error.txt", 'a', encoding='utf-8') as f0:
+								f0.write(p)
+							with open(BasePath + "Screen2.txt", 'w', encoding='utf-8') as f0:
+								f0.write('1')
+					if need_re_calculate == '0':
+						screen_position_old = codecs.open(BasePath + "Screen.txt", 'r', encoding='utf-8').read()
+						if screen_position_old == '':
+							pass
+						else:
+							if screen_position_old != screen_position:
+								try:
+									if self.dock_postion == 'x':
+										CMD = '''
+											on run argv
+												display notification (item 2 of argv) with title (item 1 of argv)
+											end run'''
+										self.notify(CMD, "Shameplant: Dynaic Dock",
+													f"Please go to the Settings panel in the menu bar.")
+									else:
+										with open(BasePath + "Screen2.txt", 'w', encoding='utf-8') as f0:
+											f0.write('0')
+										os.execv(sys.executable, [sys.executable, __file__])
+								except Exception as e:
+									# 发生异常时打印错误信息
+									p = "程序发生异常:" + str(e)
+									print(p)
+									with open(BasePath + "Error.txt", 'a', encoding='utf-8') as f0:
+										f0.write(p)
+									with open(BasePath + "Screen2.txt", 'w', encoding='utf-8') as f0:
+										f0.write('1')
+					with open(BasePath + "Screen.txt", 'w', encoding='utf-8') as f0:
+						f0.write(screen_position)
+					break
+		except Exception as e:
+			# 发生异常时打印错误信息
+			p = "程序发生异常:" + str(e)
+			with open(BasePath + "Error.txt", 'a', encoding='utf-8') as f0:
+				f0.write(p)
+
+	# def get_pid_psutil(self, app_name):
+	#	 for proc in psutil.process_iter(attrs=["pid", "name"]):
+	#		 try:
+	#			 if app_name.lower() in proc.info["name"].lower():
+	#				 return proc.info["pid"]
+	#		 except (psutil.NoSuchProcess, psutil.AccessDenied, psutil.ZombieProcess):
+	#			 continue
+	#	 return None
+
+	def get_app_window_info(self, app_name):
+		# 仅获取当前屏幕上可见的窗口
+		options = Quartz.kCGWindowListOptionOnScreenOnly
+		window_list = Quartz.CGWindowListCopyWindowInfo(options, Quartz.kCGNullWindowID)
+		for window in window_list:
+			owner = window.get("kCGWindowOwnerName", "")
+			if owner == app_name:
+				bounds = window.get("kCGWindowBounds", {})
+				x = bounds.get("X", 0)
+				y = bounds.get("Y", 0)
+				width = bounds.get("Width", 0)
+				height = bounds.get("Height", 0)
+				return (x, y, width, height)
+		return None
+
+	# def app_relaunch(self):
+	#	 sys.exit(0)
+
+	# def restart_program(self):
+	#	 subprocess.Popen([sys.executable] + sys.argv)
+	#	 os._exit(0)  # 直接退出当前进程
+
+
+class MouseClickListener(QThread):
+	click_signal = pyqtSignal(int, int)  # 发送鼠标点击坐标信号
+	drag_signal = pyqtSignal(int, int)
+
+	def __init__(self):
+		super().__init__()
+		self.listener = None
+		self.start_x = 0
+		self.start_y = 0
+		self.is_pressed = False
+		self.threshold = 3  # 拖拽距离阈值（像素）
+		self.last_click_time = 0
+		self.click_interval_threshold = 0.25  # 双击节流（秒）
+
+	def run(self):
+		with mouse.Listener(on_click=self.on_click) as self.listener:
+			self.listener.join()
+
+	def on_click(self, x, y, button, pressed):
+		if button == mouse.Button.left:
+			if pressed:
+				self.start_x = x
+				self.start_y = y
+				self.is_pressed = True
+			else:
+				if not self.is_pressed:
+					return  # 防止状态异常时误触发
+
+				self.is_pressed = False
+				distance = ((x - self.start_x) ** 2 + (y - self.start_y) ** 2) ** 0.5
+
+				if distance < self.threshold:
+					# 是点击，不是拖拽
+					current_time = time.time()
+					if current_time - self.last_click_time >= self.click_interval_threshold:
+						self.last_click_time = current_time
+						self.click_signal.emit(x, y)
+				else:
+					# 是拖拽
+					self.drag_signal.emit(self.start_x, self.start_y)
+
+	def stop(self):
+		if self.listener:
+			self.listener.stop()
+		self.quit()
 
 
 class window3(QWidget):  # 主窗口
@@ -735,6 +1448,26 @@ class window3(QWidget):  # 主窗口
 		self.fulldir4 = os.path.join(fulldir1, tarname4)
 		if not os.path.exists(self.fulldir4):
 			with open(self.fulldir4, 'a', encoding='utf-8') as f0:
+				f0.write('0')
+		tarname5 = "No.txt"
+		self.fulldir5 = os.path.join(fulldir1, tarname5)
+		if not os.path.exists(self.fulldir5):
+			with open(self.fulldir5, 'a', encoding='utf-8') as f0:
+				f0.write('')
+		tarname6 = "Always.txt"
+		self.fulldir6 = os.path.join(fulldir1, tarname6)
+		if not os.path.exists(self.fulldir6):
+			with open(self.fulldir6, 'a', encoding='utf-8') as f0:
+				f0.write('')
+		tarname7 = "Never.txt"
+		self.fulldir7 = os.path.join(fulldir1, tarname7)
+		if not os.path.exists(self.fulldir7):
+			with open(self.fulldir7, 'a', encoding='utf-8') as f0:
+				f0.write('')
+		tarname8 = "New.txt"
+		self.fulldir8 = os.path.join(fulldir1, tarname8)
+		if not os.path.exists(self.fulldir8):
+			with open(self.fulldir8, 'a', encoding='utf-8') as f0:
 				f0.write('0')
 
 		###
@@ -807,12 +1540,16 @@ class window3(QWidget):  # 主窗口
 				f0.write('0')
 
 		if self.auto_launch == '1':
-			# launch
+			# launch helper
 			try:
-				ScriptName = 'Launch ShameplantAuto'
-				shortcmd = """set myCommand to "shortcuts run \\"%s\\""
-					do shell script myCommand""" % ScriptName
-				subprocess.call(['osascript', '-e', shortcmd])
+				self.listener = AppEventListener.alloc().init() # window switch auto
+				# 启动鼠标监听线程 click drag auto
+				self.last_active_name = None
+				self.pass_key = 0
+				self.mouse_thread = MouseClickListener()
+				self.mouse_thread.click_signal.connect(self.on_click_action)
+				self.mouse_thread.drag_signal.connect(self.update_label)
+				self.mouse_thread.start()
 				action3.setChecked(True)
 			except Exception as e:
 				# 发生异常时打印错误信息
@@ -826,27 +1563,39 @@ class window3(QWidget):  # 主窗口
 		self.timer_thread.tick.connect(self.on_timer_tick)
 		self.timer_thread.start()
 
+		# Guide
+		new_guide = codecs.open(self.fulldir8, 'r', encoding='utf-8').read()
+		if new_guide == '0':
+			w5.show()
+
 	def notify(self, CMD, title, text):
 		subprocess.call(['osascript', '-e', CMD, title, text])
 
 	def activate(self):  # 设置窗口显示
 		if action3.isChecked():
+			# launch helper
 			try:
-				ScriptName = 'Launch ShameplantAuto'
-				shortcmd = """set myCommand to "shortcuts run \\"%s\\""
-					do shell script myCommand""" % ScriptName
-				subprocess.call(['osascript', '-e', shortcmd])
+				self.listener = AppEventListener.alloc().init()  # window switch auto
+				# 启动鼠标监听线程 click drag auto
+				self.last_active_name = None
+				self.pass_key = 0
+				self.mouse_thread = MouseClickListener()
+				self.mouse_thread.click_signal.connect(self.on_click_action)
+				self.mouse_thread.drag_signal.connect(self.update_label)
+				self.mouse_thread.start()
 			except Exception as e:
 				# 发生异常时打印错误信息
 				p = "程序发生异常:" + str(e)
 				with open(BasePath + "Error.txt", 'a', encoding='utf-8') as f0:
 					f0.write(p)
+				action3.setChecked(False)
 		if not action3.isChecked():
 			try:
-				ScriptName = 'Quit ShameplantAuto'
-				shortcmd = """set myCommand to "shortcuts run \\"%s\\""
-					do shell script myCommand""" % ScriptName
-				subprocess.call(['osascript', '-e', shortcmd])
+				if self.listener:
+					self.listener.stop_listening() # window switch auto
+				# 启动鼠标监听线程 click drag auto
+				if self.mouse_thread:
+					self.mouse_thread.stop()
 			except Exception as e:
 				# 发生异常时打印错误信息
 				p = "程序发生异常:" + str(e)
@@ -857,10 +1606,14 @@ class window3(QWidget):  # 主窗口
 		ReLa = codecs.open(BasePath + "ReLa.txt", 'r', encoding='utf-8').read()
 		if ReLa == '1':
 			try:
-				ScriptName = 'Launch ShameplantAuto'
-				shortcmd = """set myCommand to "shortcuts run \\"%s\\""
-					do shell script myCommand""" % ScriptName
-				subprocess.call(['osascript', '-e', shortcmd])
+				self.listener = AppEventListener.alloc().init()  # window switch auto
+				# 启动鼠标监听线程 click drag auto
+				self.last_active_name = None
+				self.pass_key = 0
+				self.mouse_thread = MouseClickListener()
+				self.mouse_thread.click_signal.connect(self.on_click_action)
+				self.mouse_thread.drag_signal.connect(self.update_label)
+				self.mouse_thread.start()
 				action3.setChecked(True)
 			except Exception as e:
 				# 发生异常时打印错误信息
@@ -979,6 +1732,235 @@ class window3(QWidget):  # 主窗口
 		else:
 			pass
 
+	def on_click_action(self, x, y):
+		try:
+			time.sleep(0.05)
+			# self.label.setText(f"拖拽中: ({x}, {y})")
+			""" 当前台应用变化时，自动调整 Dock """
+			active_app = NSWorkspace.sharedWorkspace().activeApplication()
+			app_name = active_app['NSApplicationName']
+
+			if app_name == "loginwindow":
+				return
+
+			never_react = codecs.open(self.fulldir5, 'r', encoding='utf-8').read()
+			never_react_list = never_react.split('\n')
+			while '' in never_react_list:
+				never_react_list.remove('')
+
+			always_show = codecs.open(self.fulldir6, 'r', encoding='utf-8').read()
+			always_show_list = always_show.split('\n')
+			while '' in always_show_list:
+				always_show_list.remove('')
+
+			always_hide = codecs.open(self.fulldir7, 'r', encoding='utf-8').read()
+			always_hide_list = always_hide.split('\n')
+			while '' in always_hide_list:
+				always_hide_list.remove('')
+
+			if app_name in never_react_list:
+				return
+
+			if app_name in always_show_list:
+				toggle_dock_script = 'tell application "System Events" to set the autohide of dock preferences to false'
+				os.system(f"osascript -e '{toggle_dock_script}'")
+				return
+
+			if app_name in always_hide_list:
+				toggle_dock_script = 'tell application "System Events" to set the autohide of dock preferences to true'
+				os.system(f"osascript -e '{toggle_dock_script}'")
+				return
+
+			if self.last_active_name != None:
+				if self.last_active_name != app_name:
+					self.last_active_name = app_name
+					return
+				else:
+					self.pass_key = 1
+			else:
+				self.pass_key = 1
+
+			if self.pass_key == 1:
+				# 读取 dock 位置 & 配置参数
+				home_dir = str(Path.home())
+				settings_dir = os.path.join(home_dir, "ShameplantAppPath")
+				pos_file = os.path.join(settings_dir, "Position.txt")
+				dist_file = os.path.join(settings_dir, "Distance.txt")
+				core_file = os.path.join(BasePath, "core_value.txt")
+				basic_file = os.path.join(BasePath, "menu_height.txt")
+
+				if not os.path.exists(pos_file) or not os.path.exists(dist_file) or not os.path.exists(core_file):
+					return
+
+				dock_position = int(codecs.open(pos_file, 'r', encoding='utf-8').read().strip())
+				threshold = int(codecs.open(dist_file, 'r', encoding='utf-8').read().strip())
+				core_value = int(codecs.open(core_file, 'r', encoding='utf-8').read().strip())
+				basic_value = int(codecs.open(basic_file, 'r', encoding='utf-8').read().strip())
+
+				# 获取当前前台应用的应用程序标识符（PID）
+				# pid = self.get_pid_psutil(app_name)
+
+				# 使用 Accessibility API 获取该应用的窗口信息
+				info = self.get_app_window_info(app_name)
+				if info is None:
+					time.sleep(0.5)
+					try:
+						info = self.get_app_window_info(app_name)
+					except Exception as e:
+						# 发生异常时打印错误信息
+						p = "程序发生异常: info is None" + str(e)
+						with open(BasePath + "Error.txt", 'a', encoding='utf-8') as f0:
+							f0.write(p)
+				x = info[0]
+				y = info[1]
+				width = info[2]
+				height = info[3]
+
+				y_basic_value = 0
+				if dock_position == 0:
+					y_basic_value = basic_value - 1
+				# 仅对可见窗口做出反应
+				if y > y_basic_value and width > 0 and height > 0:
+					compare_value = threshold
+					if dock_position == 0:
+						compare_value = int(y) + int(height) + threshold
+					if dock_position == 1:
+						compare_value = int(x) - threshold
+					if dock_position == 2:
+						compare_value = int(x) + int(width) + threshold
+
+					# 仅在 dock 状态需要变化时执行 AppleScript，减少 CPU 消耗
+					if (dock_position == 0 and compare_value >= core_value) or \
+							(dock_position == 1 and compare_value <= core_value) or \
+							(dock_position == 2 and compare_value >= core_value):
+						toggle_dock_script = 'tell application "System Events" to set the autohide of dock preferences to true'
+					else:
+						toggle_dock_script = 'tell application "System Events" to set the autohide of dock preferences to false'
+
+					os.system(f"osascript -e '{toggle_dock_script}'")
+				self.last_active_name = app_name
+		except Exception as e:
+			# 发生异常时打印错误信息
+			p = "程序发生异常:" + str(e)
+			with open(BasePath + "Error.txt", 'a', encoding='utf-8') as f0:
+				f0.write(p)
+
+	def update_label(self, x, y):
+		try:
+			# self.label.setText(f"拖拽中: ({x}, {y})")
+			""" 当前台应用变化时，自动调整 Dock """
+			active_app = NSWorkspace.sharedWorkspace().activeApplication()
+			app_name = active_app['NSApplicationName']
+
+			if app_name == "loginwindow":
+				return
+
+			never_react = codecs.open(self.fulldir5, 'r', encoding='utf-8').read()
+			never_react_list = never_react.split('\n')
+			while '' in never_react_list:
+				never_react_list.remove('')
+
+			always_show = codecs.open(self.fulldir6, 'r', encoding='utf-8').read()
+			always_show_list = always_show.split('\n')
+			while '' in always_show_list:
+				always_show_list.remove('')
+
+			always_hide = codecs.open(self.fulldir7, 'r', encoding='utf-8').read()
+			always_hide_list = always_hide.split('\n')
+			while '' in always_hide_list:
+				always_hide_list.remove('')
+
+			if app_name in never_react_list:
+				return
+
+			if app_name in always_show_list:
+				toggle_dock_script = 'tell application "System Events" to set the autohide of dock preferences to false'
+				os.system(f"osascript -e '{toggle_dock_script}'")
+				return
+
+			if app_name in always_hide_list:
+				toggle_dock_script = 'tell application "System Events" to set the autohide of dock preferences to true'
+				os.system(f"osascript -e '{toggle_dock_script}'")
+				return
+
+			# 读取 dock 位置 & 配置参数
+			home_dir = str(Path.home())
+			settings_dir = os.path.join(home_dir, "ShameplantAppPath")
+			pos_file = os.path.join(settings_dir, "Position.txt")
+			dist_file = os.path.join(settings_dir, "Distance.txt")
+			core_file = os.path.join(BasePath, "core_value.txt")
+			basic_file = os.path.join(BasePath, "menu_height.txt")
+
+			if not os.path.exists(pos_file) or not os.path.exists(dist_file) or not os.path.exists(core_file):
+				return
+
+			dock_position = int(codecs.open(pos_file, 'r', encoding='utf-8').read().strip())
+			threshold = int(codecs.open(dist_file, 'r', encoding='utf-8').read().strip())
+			core_value = int(codecs.open(core_file, 'r', encoding='utf-8').read().strip())
+			basic_value = int(codecs.open(basic_file, 'r', encoding='utf-8').read().strip())
+
+			# 获取当前前台应用的应用程序标识符（PID）
+			# pid = self.get_pid_psutil(app_name)
+
+			# 使用 Accessibility API 获取该应用的窗口信息
+			info = self.get_app_window_info(app_name)
+			if info is None:
+				time.sleep(0.5)
+				try:
+					info = self.get_app_window_info(app_name)
+				except Exception as e:
+					# 发生异常时打印错误信息
+					p = "程序发生异常: info is None" + str(e)
+					with open(BasePath + "Error.txt", 'a', encoding='utf-8') as f0:
+						f0.write(p)
+			x = info[0]
+			y = info[1]
+			width = info[2]
+			height = info[3]
+
+			y_basic_value = 0
+			if dock_position == 0:
+				y_basic_value = basic_value - 1
+			# 仅对可见窗口做出反应
+			if y > y_basic_value and width > 0 and height > 0:
+				compare_value = threshold
+				if dock_position == 0:
+					compare_value = int(y) + int(height) + threshold
+				if dock_position == 1:
+					compare_value = int(x) - threshold
+				if dock_position == 2:
+					compare_value = int(x) + int(width) + threshold
+
+				# 仅在 dock 状态需要变化时执行 AppleScript，减少 CPU 消耗
+				if (dock_position == 0 and compare_value >= core_value) or \
+						(dock_position == 1 and compare_value <= core_value) or \
+						(dock_position == 2 and compare_value >= core_value):
+					toggle_dock_script = 'tell application "System Events" to set the autohide of dock preferences to true'
+				else:
+					toggle_dock_script = 'tell application "System Events" to set the autohide of dock preferences to false'
+
+				os.system(f"osascript -e '{toggle_dock_script}'")
+		except Exception as e:
+			# 发生异常时打印错误信息
+			p = "程序发生异常:" + str(e)
+			with open(BasePath + "Error.txt", 'a', encoding='utf-8') as f0:
+				f0.write(p)
+
+	def get_app_window_info(self, app_name):
+		# 仅获取当前屏幕上可见的窗口
+		options = Quartz.kCGWindowListOptionOnScreenOnly
+		window_list = Quartz.CGWindowListCopyWindowInfo(options, Quartz.kCGNullWindowID)
+		for window in window_list:
+			owner = window.get("kCGWindowOwnerName", "")
+			if owner == app_name:
+				bounds = window.get("kCGWindowBounds", {})
+				x = bounds.get("X", 0)
+				y = bounds.get("Y", 0)
+				width = bounds.get("Width", 0)
+				height = bounds.get("Height", 0)
+				return (x, y, width, height)
+		return None
+
 
 class window4(QWidget):  # Customization settings
 	def __init__(self):
@@ -1036,6 +2018,11 @@ class window4(QWidget):  # Customization settings
 		if not os.path.exists(self.fulldir7):
 			with open(self.fulldir7, 'a', encoding='utf-8') as f0:
 				f0.write('')
+		tarname8 = "New.txt"
+		self.fulldir8 = os.path.join(fulldir1, tarname8)
+		if not os.path.exists(self.fulldir8):
+			with open(self.fulldir8, 'a', encoding='utf-8') as f0:
+				f0.write('0')
 
 		###
 
@@ -1563,11 +2550,21 @@ class window4(QWidget):  # Customization settings
 		with open(BasePath + "ReLa.txt", 'w', encoding='utf-8') as f0:
 			f0.write('0')
 		if action3.isChecked():
-			ScriptName = 'Quit ShameplantAuto'
-			shortcmd = """set myCommand to "shortcuts run \\"%s\\""
-				do shell script myCommand""" % ScriptName
-			subprocess.call(['osascript', '-e', shortcmd])
+			if w3.listener:
+				w3.listener.stop_listening()  # window switch auto
+			# 启动鼠标监听线程 click drag auto
+			if w3.mouse_thread:
+				w3.mouse_thread.stop()
 		sys.exit(0)
+
+	def restart(self):
+		if w3.listener:
+			w3.listener.stop_listening()  # window switch auto
+		# 启动鼠标监听线程 click drag auto
+		if w3.mouse_thread:
+			w3.mouse_thread.stop()
+		time.sleep(3)
+		os.execv(sys.executable, [sys.executable, __file__])
 	
 	def center(self):  # 设置窗口居中
 		qr = self.frameGeometry()
@@ -1682,6 +2679,11 @@ if __name__ == '__main__':
 			w1 = window_about()  # about
 			w2 = window_update()  # update
 			w4 = window4()  # CUSTOMIZING
+			w5 = SliderWindow() # guide
+			w5.setAutoFillBackground(True)
+			p = w5.palette()
+			p.setColor(w5.backgroundRole(), QColor('#ECECEC'))
+			w5.setPalette(p)
 			w3 = window3()  # main1
 			w3.setAutoFillBackground(True)
 			p = w3.palette()
@@ -1691,6 +2693,8 @@ if __name__ == '__main__':
 			action2.triggered.connect(w2.activate)
 			action3.triggered.connect(w3.activate)
 			action7.triggered.connect(w4.activate)
+			action8.triggered.connect(w4.restart)
+			action9.triggered.connect(w5.show)
 			btna4.triggered.connect(w3.activate)
 			btna5.triggered.connect(w4.activate)
 			btna6.triggered.connect(w4.totalquit)

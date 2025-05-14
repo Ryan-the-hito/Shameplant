@@ -16,3 +16,4 @@ Be aware that the app now still has some bugs and remains in the early test stag
 - [ ] Add an easier way to enable accessibility 
 - [ ] Add a button to restart the app
 - [ ] Add a button to add an app to blacklist (Is window also supported?)
+- [ ] Add multiple linguistic support
