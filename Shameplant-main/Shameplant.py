@@ -165,7 +165,7 @@ menu.addAction(action2)
 action1 = QAction("ℹ️ About")
 menu.addAction(action1)
 
-action9 = QAction("🔤 Guide & Support")
+action9 = QAction("🔤 Guide and Support")
 menu.addAction(action9)
 
 menu.addSeparator()
