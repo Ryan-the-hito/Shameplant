@@ -30,6 +30,7 @@ import objc
 import Quartz
 from pynput import mouse
 import urllib.parse
+from functools import partial
 try:
 	from AppKit import NSWorkspace, NSScreen
 	from Foundation import NSObject
@@ -59,6 +60,97 @@ menu = QMenu()
 action3 = QAction("🌾 Switch on Shameplant!")
 action3.setCheckable(True)
 menu.addAction(action3)
+
+settings_menu = QMenu("🏹 Set rule for the topmost app")
+menu.addMenu(settings_menu)
+# 保留 action 引用，防止被回收（可选但推荐）
+action_refs = []
+# updade
+def on_config_clicked(config_name):
+	#print(f"Clicked: {config_name}")
+	home_dir = str(Path.home())
+	tarname1 = "ShameplantAppPath"
+	fulldir1 = os.path.join(home_dir, tarname1)
+	if not os.path.exists(fulldir1):
+		os.mkdir(fulldir1)
+	tarname5 = "No.txt"
+	fulldir5 = os.path.join(fulldir1, tarname5)
+	if not os.path.exists(fulldir5):
+		with open(fulldir5, 'a', encoding='utf-8') as f0:
+			f0.write('')
+	tarname6 = "Always.txt"
+	fulldir6 = os.path.join(fulldir1, tarname6)
+	if not os.path.exists(fulldir6):
+		with open(fulldir6, 'a', encoding='utf-8') as f0:
+			f0.write('')
+	tarname7 = "Never.txt"
+	fulldir7 = os.path.join(fulldir1, tarname7)
+	if not os.path.exists(fulldir7):
+		with open(fulldir7, 'a', encoding='utf-8') as f0:
+			f0.write('')
+
+	active_app = NSWorkspace.sharedWorkspace().activeApplication()
+	app_name = active_app['NSApplicationName']
+
+	if config_name != "Never react" and config_name != "Always show" and config_name != 'Always hide':
+		settings_menu.clear()
+		for name in [f"🔝{app_name}", "Never react", "Always show", 'Always hide']:
+			action = QAction(name, settings_menu)
+			action.triggered.connect(partial(on_config_clicked, name))
+			settings_menu.addAction(action)
+			action_refs.append(action)  # 避免垃圾回收
+	if config_name == "Never react":
+		never_react = codecs.open(fulldir5, 'r', encoding='utf-8').read()
+		never_react_list = never_react.split('\n')
+		while '' in never_react_list:
+			never_react_list.remove('')
+		if app_name not in never_react_list:
+			with open(fulldir5, 'a', encoding='utf-8') as f0:
+				f0.write(app_name + '\n')
+			never_react = codecs.open(fulldir5, 'r', encoding='utf-8').read().lstrip('\n')
+			with open(fulldir5, 'w', encoding='utf-8') as f0:
+				f0.write(never_react)
+	if config_name == "Always show":
+		never_react = codecs.open(fulldir6, 'r', encoding='utf-8').read()
+		never_react_list = never_react.split('\n')
+		while '' in never_react_list:
+			never_react_list.remove('')
+		if app_name not in never_react_list:
+			with open(fulldir6, 'a', encoding='utf-8') as f0:
+				f0.write(app_name + '\n')
+			never_react = codecs.open(fulldir6, 'r', encoding='utf-8').read().lstrip('\n')
+			with open(fulldir6, 'w', encoding='utf-8') as f0:
+				f0.write(never_react)
+	if config_name == "Always hide":
+		never_react = codecs.open(fulldir7, 'r', encoding='utf-8').read()
+		never_react_list = never_react.split('\n')
+		while '' in never_react_list:
+			never_react_list.remove('')
+		if app_name not in never_react_list:
+			with open(fulldir7, 'a', encoding='utf-8') as f0:
+				f0.write(app_name + '\n')
+			never_react = codecs.open(fulldir7, 'r', encoding='utf-8').read().lstrip('\n')
+			with open(fulldir7, 'w', encoding='utf-8') as f0:
+				f0.write(never_react)
+# 添加多个菜单项并绑定函数
+active_app = NSWorkspace.sharedWorkspace().activeApplication()
+app_name = active_app['NSApplicationName']
+for name in [f"🔝{app_name}", "Never react", "Always show", 'Always hide']:
+	action = QAction(name, settings_menu)
+	action.triggered.connect(partial(on_config_clicked, name))
+	settings_menu.addAction(action)
+	action_refs.append(action)  # 避免垃圾回收
+
+def on_tray_icon_clicked():
+	settings_menu.clear()
+	active_app = NSWorkspace.sharedWorkspace().activeApplication()
+	app_name = active_app['NSApplicationName']
+	for name in [f"🔝{app_name}", "Never react", "Always show", 'Always hide']:
+		action = QAction(name, settings_menu)
+		action.triggered.connect(partial(on_config_clicked, name))
+		settings_menu.addAction(action)
+		action_refs.append(action)  # 避免垃圾回收
+tray.activated.connect(on_tray_icon_clicked)
 
 menu.addSeparator()
 
@@ -142,7 +234,7 @@ class window_about(QWidget):  # 增加说明页面(About)
 		widg2.setLayout(blay2)
 
 		widg3 = QWidget()
-		lbl1 = QLabel('Version 1.0.1', self)
+		lbl1 = QLabel('Version 1.0.2', self)
 		blay3 = QHBoxLayout()
 		blay3.setContentsMargins(0, 0, 0, 0)
 		blay3.addStretch()
@@ -605,7 +697,7 @@ class window_update(QWidget):  # 增加更新页面（Check for Updates）
 
 	def initUI(self):  # 说明页面内信息
 
-		self.lbl = QLabel('Current Version: v1.0.1', self)
+		self.lbl = QLabel('Current Version: v1.0.2', self)
 		self.lbl.move(30, 45)
 
 		lbl0 = QLabel('Download Update:', self)
@@ -954,7 +1046,7 @@ class SliderWindow(QWidget): # inside pages of guidance
 		imagepath1 = BasePath + 'access1.png'
 		imagepath2 = BasePath + 'access2.png'
 		imagepath3 = BasePath + 'access3.png'
-		imagepath4 = BasePath + 'prompte.png'
+		imagepath4 = BasePath + 'promote.png'
 		self.slides = [
 			Slide("Welcome to Shameplant!", "white", None, f'{gifpath}', False, 50),
 			Slide("Allow automation", "white", f'{imagepath1}', None, False),
@@ -2580,6 +2672,27 @@ class window4(QWidget):  # Customization settings
 		w2.checkupdate()
 		if w2.lbl2.text() != 'No Intrenet' and 'ready' in w2.lbl2.text():
 			w2.show()
+
+		never_react = codecs.open(self.fulldir5, 'r', encoding='utf-8').read()
+		never_react_list = never_react.split('\n')
+		while '' in never_react_list:
+			never_react_list.remove('')
+		self.text_feed.clear()
+		self.text_feed.addItems(never_react_list)
+
+		always_show = codecs.open(self.fulldir6, 'r', encoding='utf-8').read()
+		always_show_list = always_show.split('\n')
+		while '' in always_show_list:
+			always_show_list.remove('')
+		self.text_feed_1.clear()
+		self.text_feed_1.addItems(always_show_list)
+
+		never_show = codecs.open(self.fulldir7, 'r', encoding='utf-8').read()
+		never_show_list = never_show.split('\n')
+		while '' in never_show_list:
+			never_show_list.remove('')
+		self.text_feed_2.clear()
+		self.text_feed_2.addItems(never_show_list)
 
 		self.show()
 		self.setFocus()
