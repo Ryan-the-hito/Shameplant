@@ -162,6 +162,14 @@ menu.addAction(action7)
 action10 = QAction("🛠️ Start on login")
 action10.setCheckable(True)
 menu.addAction(action10)
+plist_filename = 'com.ryanthehito.shameplant.plist'
+launch_agents_dir = Path.home() / "Library" / "LaunchAgents"
+launch_agents_dir.mkdir(parents=True, exist_ok=True)
+destination = launch_agents_dir / plist_filename
+if os.path.exists(destination):
+	action10.setChecked(True)
+else:
+	action10.setChecked(False)
 
 menu.addSeparator()
 
@@ -240,7 +248,7 @@ class window_about(QWidget):  # 增加说明页面(About)
 		widg2.setLayout(blay2)
 
 		widg3 = QWidget()
-		lbl1 = QLabel('Version 1.0.3', self)
+		lbl1 = QLabel('Version 1.0.4', self)
 		blay3 = QHBoxLayout()
 		blay3.setContentsMargins(0, 0, 0, 0)
 		blay3.addStretch()
@@ -267,7 +275,7 @@ class window_about(QWidget):  # 增加说明页面(About)
 		widg5.setLayout(blay5)
 
 		widg6 = QWidget()
-		lbl4 = QLabel('♥‿♥', self)
+		lbl4 = QLabel('Special thanks to ut.code(); of the University of Tokyo♥', self)
 		blay6 = QHBoxLayout()
 		blay6.setContentsMargins(0, 0, 0, 0)
 		blay6.addStretch()
@@ -276,7 +284,7 @@ class window_about(QWidget):  # 增加说明页面(About)
 		widg6.setLayout(blay6)
 
 		widg7 = QWidget()
-		lbl5 = QLabel('※\(^o^)/※', self)
+		lbl5 = QLabel('This app is under the protection of  GPL-3.0 license', self)
 		blay7 = QHBoxLayout()
 		blay7.setContentsMargins(0, 0, 0, 0)
 		blay7.addStretch()
@@ -703,7 +711,7 @@ class window_update(QWidget):  # 增加更新页面（Check for Updates）
 
 	def initUI(self):  # 说明页面内信息
 
-		self.lbl = QLabel('Current Version: v1.0.3', self)
+		self.lbl = QLabel('Current Version: v1.0.4', self)
 		self.lbl.move(30, 45)
 
 		lbl0 = QLabel('Download Update:', self)
@@ -1004,7 +1012,7 @@ class Slide(QWidget): # guide page
 	def handle_feature_c(self):
 		to = "sweeter.02.implant@icloud.com"
 		subject = "[Feedback-Shameplant]"
-		body = "\n\n---\nShameplant v1.0.3"
+		body = "\n\n---\nShameplant v1.0.4"
 		# 对 subject 和 body 进行 URL 编码
 		subject_encoded = urllib.parse.quote(subject)
 		body_encoded = urllib.parse.quote(body)
@@ -1381,7 +1389,6 @@ class AppEventListener(NSObject): # WindowSwitchAuto
 
 				if x <= mouse_location.x < x + w and y <= mouse_location.y < y + h:
 					screen_position = f"{i} ({int(w)}x{int(h)})"
-					print(screen_position)
 					need_re_calculate = codecs.open(BasePath + "Screen2.txt", 'r', encoding='utf-8').read()
 					if need_re_calculate == '1':
 						try:
@@ -2092,12 +2099,12 @@ class window3(QWidget):  # 主窗口
 				p = "程序发生异常: Autostart failed: " + str(e)
 				with open(BasePath + "Error.txt", 'a', encoding='utf-8') as f0:
 					f0.write(p)
-		if not action3.isChecked():
+		if not action10.isChecked():
 			try:
 				plist_path = Path.home() / "Library" / "LaunchAgents" / plist_filename
 				if plist_path.exists():
 					# 删除文件
-					plist_path.unlink()
+					os.remove(plist_path)
 			except Exception as e:
 				# 发生异常时打印错误信息
 				p = "程序发生异常: Removing autostart failed: " + str(e)

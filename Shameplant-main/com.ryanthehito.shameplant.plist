@@ -1,11 +1,21 @@
-{
-  "Label": "com.ryanthehito.shameplant",
-  "ProcessType": "Interactive",
-  "ProgramArguments": [
-    "/Applications/Shameplant.app/Contents/MacOS/Shameplant",
-    "autostart"
-  ],
-  "RunAtLoad": true,
-  "StandardErrorPath": "/dev/null",
-  "StandardOutPath": "/dev/null"
-}
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+  <dict>
+    <key>Label</key>
+    <string>com.ryanthehito.shameplant</string>
+    <key>ProgramArguments</key>
+    <array>
+      <string>/Applications/Shameplant.app/Contents/MacOS/Shameplant</string>
+      <string>autostart</string>
+    </array>
+    <key>RunAtLoad</key>
+    <true/>
+    <key>ProcessType</key>
+    <string>Interactive</string>
+    <key>StandardErrorPath</key>
+    <string>/dev/null</string>
+    <key>StandardOutPath</key>
+    <string>/dev/null</string>
+  </dict>
+</plist>
