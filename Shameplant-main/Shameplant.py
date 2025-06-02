@@ -27,9 +27,11 @@ import re
 import os
 from pathlib import Path
 import objc
+import shutil
 import Quartz
 from pynput import mouse
 import urllib.parse
+import traceback
 from functools import partial
 try:
 	from AppKit import NSWorkspace, NSScreen
@@ -157,6 +159,10 @@ menu.addSeparator()
 action7 = QAction("⚙️ Settings")
 menu.addAction(action7)
 
+action10 = QAction("🛠️ Start on login")
+action10.setCheckable(True)
+menu.addAction(action10)
+
 menu.addSeparator()
 
 action2 = QAction("🆕 Check for Updates")
@@ -234,7 +240,7 @@ class window_about(QWidget):  # 增加说明页面(About)
 		widg2.setLayout(blay2)
 
 		widg3 = QWidget()
-		lbl1 = QLabel('Version 1.0.2', self)
+		lbl1 = QLabel('Version 1.0.3', self)
 		blay3 = QHBoxLayout()
 		blay3.setContentsMargins(0, 0, 0, 0)
 		blay3.addStretch()
@@ -697,7 +703,7 @@ class window_update(QWidget):  # 增加更新页面（Check for Updates）
 
 	def initUI(self):  # 说明页面内信息
 
-		self.lbl = QLabel('Current Version: v1.0.2', self)
+		self.lbl = QLabel('Current Version: v1.0.3', self)
 		self.lbl.move(30, 45)
 
 		lbl0 = QLabel('Download Update:', self)
@@ -998,7 +1004,7 @@ class Slide(QWidget): # guide page
 	def handle_feature_c(self):
 		to = "sweeter.02.implant@icloud.com"
 		subject = "[Feedback-Shameplant]"
-		body = "\n\nShameplant v1.0.2"
+		body = "\n\n---\nShameplant v1.0.3"
 		# 对 subject 和 body 进行 URL 编码
 		subject_encoded = urllib.parse.quote(subject)
 		body_encoded = urllib.parse.quote(body)
@@ -1331,11 +1337,15 @@ class AppEventListener(NSObject): # WindowSwitchAuto
 					p = "程序发生异常: info is None" + str(e)
 					with open(BasePath + "Error.txt", 'a', encoding='utf-8') as f0:
 						f0.write(p)
+			if info is None:
+				# 最终确认失败才跳出逻辑，避免崩溃和死循环
+				with open(BasePath + "Error.txt", 'a', encoding='utf-8') as f0:
+					f0.write("info is still None after retry.\n")
+				return  # ❗这里不要继续执行，直接退出函数
 			x = info[0]
 			y = info[1]
 			width = info[2]
 			height = info[3]
-			#print(f'{x}, {y}, {width}, {height}')
 
 			y_basic_value = 0
 			if dock_position == 0:
@@ -1360,25 +1370,18 @@ class AppEventListener(NSObject): # WindowSwitchAuto
 
 				os.system(f"osascript -e '{toggle_dock_script}'")
 
-			mouse_location = Quartz.CGEventGetLocation(Quartz.CGEventCreate(None))
-			mouse_x, mouse_y = int(mouse_location.x), int(mouse_location.y)
+			mouse_location = Quartz.NSEvent.mouseLocation()
 
-			# 获取所有屏幕
-			max_displays = 100
-			active_displays = Quartz.CGGetActiveDisplayList(max_displays, None, None)[1]
-
-			# 计算鼠标在哪个屏幕
-			main_screen = NSScreen.mainScreen()
-			frame = main_screen.frame()
-			visible_frame = main_screen.visibleFrame()
+			# judge
 			self.dock_postion = codecs.open(pos_file, 'r', encoding='utf-8').read()
-			for display in active_displays:
-				bounds = Quartz.CGDisplayBounds(display)
-				x, y, w, h = int(bounds.origin.x), int(bounds.origin.y), int(bounds.size.width), int(bounds.size.height)
+			screens = NSScreen.screens()
+			for i, screen in enumerate(screens):
+				frame = screen.frame()
+				x, y, w, h = frame.origin.x, frame.origin.y, frame.size.width, frame.size.height
 
-				if x <= mouse_x < x + w and y <= mouse_y < y + h:
-					screen_position = f"{display} ({w}x{h})"
-					#print(screen_position)
+				if x <= mouse_location.x < x + w and y <= mouse_location.y < y + h:
+					screen_position = f"{i} ({int(w)}x{int(h)})"
+					print(screen_position)
 					need_re_calculate = codecs.open(BasePath + "Screen2.txt", 'r', encoding='utf-8').read()
 					if need_re_calculate == '1':
 						try:
@@ -1387,15 +1390,17 @@ class AppEventListener(NSObject): # WindowSwitchAuto
 									on run argv
 										display notification (item 2 of argv) with title (item 1 of argv)
 									end run'''
-								self.notify(CMD, "Shameplant: Dynaic Dock",
+								self.notify(CMD, "Shameplant: Dynamically Hide Your Dock",
 											f"Please go to the Settings panel in the menu bar.")
 							else:
 								with open(BasePath + "Screen2.txt", 'w', encoding='utf-8') as f0:
 									f0.write('0')
+								with open(BasePath + "Screen.txt", 'w', encoding='utf-8') as f0:
+									f0.write(screen_position)
 								os.execv(sys.executable, [sys.executable, __file__])
 						except Exception as e:
 							# 发生异常时打印错误信息
-							p = "程序发生异常:" + str(e)
+							p = "程序发生异常re1:" + str(e)
 							with open(BasePath + "Error.txt", 'a', encoding='utf-8') as f0:
 								f0.write(p)
 							with open(BasePath + "Screen2.txt", 'w', encoding='utf-8') as f0:
@@ -1403,7 +1408,8 @@ class AppEventListener(NSObject): # WindowSwitchAuto
 					if need_re_calculate == '0':
 						screen_position_old = codecs.open(BasePath + "Screen.txt", 'r', encoding='utf-8').read()
 						if screen_position_old == '':
-							pass
+							with open(BasePath + "Screen.txt", 'w', encoding='utf-8') as f0:
+								f0.write(screen_position)
 						else:
 							if screen_position_old != screen_position:
 								try:
@@ -1412,28 +1418,29 @@ class AppEventListener(NSObject): # WindowSwitchAuto
 											on run argv
 												display notification (item 2 of argv) with title (item 1 of argv)
 											end run'''
-										self.notify(CMD, "Shameplant: Dynaic Dock",
+										self.notify(CMD, "Shameplant: Dynamically Hide Your Dock",
 													f"Please go to the Settings panel in the menu bar.")
 									else:
 										with open(BasePath + "Screen2.txt", 'w', encoding='utf-8') as f0:
 											f0.write('0')
+										with open(BasePath + "Screen.txt", 'w', encoding='utf-8') as f0:
+											f0.write(screen_position)
 										os.execv(sys.executable, [sys.executable, __file__])
 								except Exception as e:
 									# 发生异常时打印错误信息
-									p = "程序发生异常:" + str(e)
-									print(p)
+									p = "程序发生异常re0:" + str(e)
 									with open(BasePath + "Error.txt", 'a', encoding='utf-8') as f0:
 										f0.write(p)
 									with open(BasePath + "Screen2.txt", 'w', encoding='utf-8') as f0:
 										f0.write('1')
-					with open(BasePath + "Screen.txt", 'w', encoding='utf-8') as f0:
-						f0.write(screen_position)
 					break
 		except Exception as e:
 			# 发生异常时打印错误信息
-			p = "程序发生异常:" + str(e)
+			p = "程序发生异常large:" + str(e)
+			traceback_str = traceback.format_exc()
 			with open(BasePath + "Error.txt", 'a', encoding='utf-8') as f0:
-				f0.write(p)
+				f0.write(p + traceback_str)
+			os.execv(sys.executable, [sys.executable, __file__])
 
 	# def get_pid_psutil(self, app_name):
 	#	 for proc in psutil.process_iter(attrs=["pid", "name"]):
@@ -1575,7 +1582,7 @@ class window3(QWidget):  # 主窗口
 		        on run argv
 		            display notification (item 2 of argv) with title (item 1 of argv)
 		        end run'''
-			self.notify(CMD, "Shameplant: Dynaic Dock",
+			self.notify(CMD, "Shameplant: Dynamically Hide Your Dock",
 						f"Please go to the Settings panel in the menu bar.")
 		if self.dock_postion == '0':
 			# AppleScript命令
@@ -1586,6 +1593,8 @@ class window3(QWidget):  # 主窗口
 			subprocess.run(["osascript", "-e", toggle_dock_script])
 			time.sleep(1)
 			dock_height = int(visible_frame.origin.y)
+			if dock_height == 0:
+				os.execv(sys.executable, [sys.executable, __file__])
 			menubar_height = int(frame.size.height - visible_frame.size.height - dock_height)
 			core_value = int(frame.size.height - dock_height)
 			# 写入记录
@@ -1606,6 +1615,8 @@ class window3(QWidget):  # 主窗口
 			subprocess.run(["osascript", "-e", toggle_dock_script])
 			time.sleep(1)
 			dock_height = int(visible_frame.origin.x - frame.origin.x)
+			if dock_height == 0:
+				os.execv(sys.executable, [sys.executable, __file__])
 			# 写入记录
 			with open(BasePath + "dock_height.txt", 'w', encoding='utf-8') as f0:
 				f0.write(str(dock_height))
@@ -1622,6 +1633,8 @@ class window3(QWidget):  # 主窗口
 			subprocess.run(["osascript", "-e", toggle_dock_script])
 			time.sleep(1)
 			dock_height = int(frame.size.width - visible_frame.size.width)
+			if dock_height == 0:
+				os.execv(sys.executable, [sys.executable, __file__])
 			core_value = int(visible_frame.size.width)
 			# 写入记录
 			with open(BasePath + "dock_height.txt", 'w', encoding='utf-8') as f0:
@@ -1731,7 +1744,7 @@ class window3(QWidget):  # 主窗口
 			# Dock 在左边
 			if visible.origin.x > frame.origin.x:
 				dock_height = visible.origin.x - frame.origin.x
-				print(visible.origin.x, frame.origin.x)
+				#print(visible.origin.x, frame.origin.x)
 				return {"screen": screen,
 						"dock_position": "left",
 						"dock_height": dock_height
@@ -1758,7 +1771,7 @@ class window3(QWidget):  # 主窗口
 				        on run argv
 				            display notification (item 2 of argv) with title (item 1 of argv)
 				        end run'''
-					self.notify(CMD, "Shameplant: Dynaic Dock",
+					self.notify(CMD, "Shameplant: Dynamically Hide Your Dock",
 								f"Please go to the Settings panel in the menu bar.")
 				if self.dock_postion == '0':
 					# AppleScript命令
@@ -1903,6 +1916,11 @@ class window3(QWidget):  # 主窗口
 						p = "程序发生异常: info is None" + str(e)
 						with open(BasePath + "Error.txt", 'a', encoding='utf-8') as f0:
 							f0.write(p)
+				if info is None:
+					# 最终确认失败才跳出逻辑，避免崩溃和死循环
+					with open(BasePath + "Error.txt", 'a', encoding='utf-8') as f0:
+						f0.write("info is still None after retry.\n")
+					return  # ❗这里不要继续执行，直接退出函数
 				x = info[0]
 				y = info[1]
 				width = info[2]
@@ -2005,6 +2023,11 @@ class window3(QWidget):  # 主窗口
 					p = "程序发生异常: info is None" + str(e)
 					with open(BasePath + "Error.txt", 'a', encoding='utf-8') as f0:
 						f0.write(p)
+			if info is None:
+				# 最终确认失败才跳出逻辑，避免崩溃和死循环
+				with open(BasePath + "Error.txt", 'a', encoding='utf-8') as f0:
+					f0.write("info is still None after retry.\n")
+				return  # ❗这里不要继续执行，直接退出函数
 			x = info[0]
 			y = info[1]
 			width = info[2]
@@ -2052,6 +2075,34 @@ class window3(QWidget):  # 主窗口
 				height = bounds.get("Height", 0)
 				return (x, y, width, height)
 		return None
+
+	def login_start(self):
+		plist_filename = 'com.ryanthehito.shameplant.plist'
+		if action10.isChecked():
+			try:
+				launch_agents_dir = Path.home() / "Library" / "LaunchAgents"
+				launch_agents_dir.mkdir(parents=True, exist_ok=True)
+				plist_source_path = BasePath + plist_filename
+				destination = launch_agents_dir / plist_filename
+				shutil.copy2(plist_source_path, destination)
+				# 设置权限确保 macOS 能读
+				os.chmod(destination, 0o644)
+			except Exception as e:
+				# 发生异常时打印错误信息
+				p = "程序发生异常: Autostart failed: " + str(e)
+				with open(BasePath + "Error.txt", 'a', encoding='utf-8') as f0:
+					f0.write(p)
+		if not action3.isChecked():
+			try:
+				plist_path = Path.home() / "Library" / "LaunchAgents" / plist_filename
+				if plist_path.exists():
+					# 删除文件
+					plist_path.unlink()
+			except Exception as e:
+				# 发生异常时打印错误信息
+				p = "程序发生异常: Removing autostart failed: " + str(e)
+				with open(BasePath + "Error.txt", 'a', encoding='utf-8') as f0:
+					f0.write(p)
 
 
 class window4(QWidget):  # Customization settings
@@ -2808,6 +2859,7 @@ if __name__ == '__main__':
 			action7.triggered.connect(w4.activate)
 			action8.triggered.connect(w4.restart)
 			action9.triggered.connect(w5.show)
+			action10.triggered.connect(w3.login_start)
 			btna4.triggered.connect(w3.activate)
 			btna5.triggered.connect(w4.activate)
 			btna6.triggered.connect(w4.totalquit)

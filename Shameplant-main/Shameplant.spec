@@ -3,7 +3,7 @@
 
 block_cipher = None
 
-__version__ = '1.0.2'
+__version__ = '1.0.3'
 
 info_plist = {
     'LSUIElement': True,
@@ -14,7 +14,7 @@ a = Analysis(
     ['Shameplant.py'],
     pathex=['/Users/ryanshenefield/Downloads/Shameplant.py'],
     binaries=[],
-    datas=[('Shameplant_menu.icns', '.'), ('Shameplant_desk.icns', '.'), ('Shameplant_menu.png', '.'), ('wechat50.png', '.'), ('wechat20.png', '.'), ('wechat10.png', '.'), ('wechat5.png', '.'), ('alipay50.png', '.'), ('alipay20.png', '.'), ('alipay10.png', '.'), ('alipay5.png', '.'), ('ReLa.txt', '.'), ('DockRe.txt', '.'), ('Screen.txt', '.'), ('Screen2.txt', '.'), ('minus.png', '.'), ('plus.png', '.'), ('promote.png', '.'), ('access1.png', '.'), ('access2.png', '.'), ('access3.png', '.'), ('dock9.gif', '.')],
+    datas=[('Shameplant_menu.icns', '.'), ('Shameplant_desk.icns', '.'), ('Shameplant_menu.png', '.'), ('wechat50.png', '.'), ('wechat20.png', '.'), ('wechat10.png', '.'), ('wechat5.png', '.'), ('alipay50.png', '.'), ('alipay20.png', '.'), ('alipay10.png', '.'), ('alipay5.png', '.'), ('ReLa.txt', '.'), ('DockRe.txt', '.'), ('Screen.txt', '.'), ('Screen2.txt', '.'), ('minus.png', '.'), ('plus.png', '.'), ('promote.png', '.'), ('access1.png', '.'), ('access2.png', '.'), ('access3.png', '.'), ('dock9.gif', '.'), ('com.ryanthehito.shameplant.plist', '.')],
     hiddenimports=['subprocess', 'AppKit'],
     hookspath=[],
     hooksconfig={},
@@ -60,6 +60,6 @@ app = BUNDLE(
     name='Shameplant.app',
     icon='Shameplant_desk.icns',
     info_plist=info_plist,
-    bundle_identifier=None,
+    bundle_identifier='com.ryanthehito.shameplant',
     version=__version__,
 )

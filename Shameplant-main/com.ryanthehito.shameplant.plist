@@ -1,0 +1,11 @@
+{
+  "Label": "com.ryanthehito.shameplant",
+  "ProcessType": "Interactive",
+  "ProgramArguments": [
+    "/Applications/Shameplant.app/Contents/MacOS/Shameplant",
+    "autostart"
+  ],
+  "RunAtLoad": true,
+  "StandardErrorPath": "/dev/null",
+  "StandardOutPath": "/dev/null"
+}
