@@ -9,7 +9,7 @@ import time
 
 from PyQt6.QtWidgets import (QWidget, QPushButton, QApplication,
 							 QLabel, QHBoxLayout, QVBoxLayout, QLineEdit,
-							 QSystemTrayIcon, QMenu, QDialog, QMenuBar, QCheckBox, QTextEdit, QComboBox, QListWidget, QFileDialog, QGraphicsOpacityEffect, QStackedWidget)
+							 QSystemTrayIcon, QMenu, QDialog, QMenuBar, QCheckBox, QTextEdit, QComboBox, QListWidget, QFileDialog, QGraphicsOpacityEffect, QStackedWidget, QMessageBox)
 from PyQt6.QtCore import Qt, QTimer, QThread, pyqtSignal, QSize, QUrl, QPropertyAnimation, QEasingCurve
 from PyQt6.QtGui import QAction, QIcon, QColor, QMovie, QDesktopServices, QPixmap
 import PyQt6.QtGui
@@ -248,7 +248,7 @@ class window_about(QWidget):  # 增加说明页面(About)
 		widg2.setLayout(blay2)
 
 		widg3 = QWidget()
-		lbl1 = QLabel('Version 1.0.4', self)
+		lbl1 = QLabel('Version 1.0.5', self)
 		blay3 = QHBoxLayout()
 		blay3.setContentsMargins(0, 0, 0, 0)
 		blay3.addStretch()
@@ -711,7 +711,7 @@ class window_update(QWidget):  # 增加更新页面（Check for Updates）
 
 	def initUI(self):  # 说明页面内信息
 
-		self.lbl = QLabel('Current Version: v1.0.4', self)
+		self.lbl = QLabel('Current Version: v1.0.5', self)
 		self.lbl.move(30, 45)
 
 		lbl0 = QLabel('Download Update:', self)
@@ -1012,7 +1012,7 @@ class Slide(QWidget): # guide page
 	def handle_feature_c(self):
 		to = "sweeter.02.implant@icloud.com"
 		subject = "[Feedback-Shameplant]"
-		body = "\n\n---\nShameplant v1.0.4"
+		body = "\n\n---\nShameplant v1.0.5"
 		# 对 subject 和 body 进行 URL 编码
 		subject_encoded = urllib.parse.quote(subject)
 		body_encoded = urllib.parse.quote(body)
@@ -1383,64 +1383,73 @@ class AppEventListener(NSObject): # WindowSwitchAuto
 			# judge
 			self.dock_postion = codecs.open(pos_file, 'r', encoding='utf-8').read()
 			screens = NSScreen.screens()
-			for i, screen in enumerate(screens):
-				frame = screen.frame()
-				x, y, w, h = frame.origin.x, frame.origin.y, frame.size.width, frame.size.height
+			if len(screens) > 1:
+				w3.notify2("Warnings",
+						   "Shameplant is not for multiple displays.\nDock will always be hidden.")
+				# 设置 Dock 自动隐藏
+				apple_script_hide_dock = '''
+				    tell application "System Events" to set the autohide of dock preferences to true
+				'''
+				subprocess.run(["osascript", "-e", apple_script_hide_dock])
+			if len(screens) == 1:
+				for i, screen in enumerate(screens):
+					frame = screen.frame()
+					x, y, w, h = frame.origin.x, frame.origin.y, frame.size.width, frame.size.height
 
-				if x <= mouse_location.x < x + w and y <= mouse_location.y < y + h:
-					screen_position = f"{i} ({int(w)}x{int(h)})"
-					need_re_calculate = codecs.open(BasePath + "Screen2.txt", 'r', encoding='utf-8').read()
-					if need_re_calculate == '1':
-						try:
-							if self.dock_postion == 'x':
-								CMD = '''
-									on run argv
-										display notification (item 2 of argv) with title (item 1 of argv)
-									end run'''
-								self.notify(CMD, "Shameplant: Dynamically Hide Your Dock",
-											f"Please go to the Settings panel in the menu bar.")
-							else:
+					if x <= mouse_location.x < x + w and y <= mouse_location.y < y + h:
+						screen_position = f"{i} ({int(w)}x{int(h)})"
+						need_re_calculate = codecs.open(BasePath + "Screen2.txt", 'r', encoding='utf-8').read()
+						if need_re_calculate == '1':
+							try:
+								if self.dock_postion == 'x':
+									CMD = '''
+										on run argv
+											display notification (item 2 of argv) with title (item 1 of argv)
+										end run'''
+									self.notify(CMD, "Shameplant: Dynamically Hide Your Dock",
+												f"Please go to the Settings panel in the menu bar.")
+								else:
+									with open(BasePath + "Screen2.txt", 'w', encoding='utf-8') as f0:
+										f0.write('0')
+									with open(BasePath + "Screen.txt", 'w', encoding='utf-8') as f0:
+										f0.write(screen_position)
+									os.execv(sys.executable, [sys.executable, __file__])
+							except Exception as e:
+								# 发生异常时打印错误信息
+								p = "程序发生异常re1:" + str(e)
+								with open(BasePath + "Error.txt", 'a', encoding='utf-8') as f0:
+									f0.write(p)
 								with open(BasePath + "Screen2.txt", 'w', encoding='utf-8') as f0:
-									f0.write('0')
+									f0.write('1')
+						if need_re_calculate == '0':
+							screen_position_old = codecs.open(BasePath + "Screen.txt", 'r', encoding='utf-8').read()
+							if screen_position_old == '':
 								with open(BasePath + "Screen.txt", 'w', encoding='utf-8') as f0:
 									f0.write(screen_position)
-								os.execv(sys.executable, [sys.executable, __file__])
-						except Exception as e:
-							# 发生异常时打印错误信息
-							p = "程序发生异常re1:" + str(e)
-							with open(BasePath + "Error.txt", 'a', encoding='utf-8') as f0:
-								f0.write(p)
-							with open(BasePath + "Screen2.txt", 'w', encoding='utf-8') as f0:
-								f0.write('1')
-					if need_re_calculate == '0':
-						screen_position_old = codecs.open(BasePath + "Screen.txt", 'r', encoding='utf-8').read()
-						if screen_position_old == '':
-							with open(BasePath + "Screen.txt", 'w', encoding='utf-8') as f0:
-								f0.write(screen_position)
-						else:
-							if screen_position_old != screen_position:
-								try:
-									if self.dock_postion == 'x':
-										CMD = '''
-											on run argv
-												display notification (item 2 of argv) with title (item 1 of argv)
-											end run'''
-										self.notify(CMD, "Shameplant: Dynamically Hide Your Dock",
-													f"Please go to the Settings panel in the menu bar.")
-									else:
+							else:
+								if screen_position_old != screen_position:
+									try:
+										if self.dock_postion == 'x':
+											CMD = '''
+												on run argv
+													display notification (item 2 of argv) with title (item 1 of argv)
+												end run'''
+											self.notify(CMD, "Shameplant: Dynamically Hide Your Dock",
+														f"Please go to the Settings panel in the menu bar.")
+										else:
+											with open(BasePath + "Screen2.txt", 'w', encoding='utf-8') as f0:
+												f0.write('0')
+											with open(BasePath + "Screen.txt", 'w', encoding='utf-8') as f0:
+												f0.write(screen_position)
+											os.execv(sys.executable, [sys.executable, __file__])
+									except Exception as e:
+										# 发生异常时打印错误信息
+										p = "程序发生异常re0:" + str(e)
+										with open(BasePath + "Error.txt", 'a', encoding='utf-8') as f0:
+											f0.write(p)
 										with open(BasePath + "Screen2.txt", 'w', encoding='utf-8') as f0:
-											f0.write('0')
-										with open(BasePath + "Screen.txt", 'w', encoding='utf-8') as f0:
-											f0.write(screen_position)
-										os.execv(sys.executable, [sys.executable, __file__])
-								except Exception as e:
-									# 发生异常时打印错误信息
-									p = "程序发生异常re0:" + str(e)
-									with open(BasePath + "Error.txt", 'a', encoding='utf-8') as f0:
-										f0.write(p)
-									with open(BasePath + "Screen2.txt", 'w', encoding='utf-8') as f0:
-										f0.write('1')
-					break
+											f0.write('1')
+						break
 		except Exception as e:
 			# 发生异常时打印错误信息
 			p = "程序发生异常large:" + str(e)
@@ -1533,7 +1542,7 @@ class window3(QWidget):  # 主窗口
 		super().__init__()
 		self.initUI()
 		self.ReLa()
-	
+
 	def initUI(self):
 		home_dir = str(Path.home())
 		tarname1 = "ShameplantAppPath"
@@ -2110,6 +2119,37 @@ class window3(QWidget):  # 主窗口
 				p = "程序发生异常: Removing autostart failed: " + str(e)
 				with open(BasePath + "Error.txt", 'a', encoding='utf-8') as f0:
 					f0.write(p)
+
+	def notify2(self, title, message):
+		#QTimer.singleShot(0, lambda: QMessageBox.critical(None, title, message))
+		def show_critical_box():
+			msg_box = QMessageBox()
+			msg_box.setIcon(QMessageBox.Icon.Critical)
+			msg_box.setWindowTitle(title)
+			msg_box.setText(message)
+			msg_box.setStyleSheet("""
+		        QMessageBox {
+		            font-size: 14px;
+		        }
+		        QPushButton {
+		            border: 1px outset grey;
+					background-color: #FFFFFF;
+					border-radius: 4px;
+					padding: 2px 12px;
+					color: #000000;
+		        }
+		        QPushButton:hover {
+		            background-color: #666;
+		            color: #FFFFFF;
+		        }
+		        QPushButton:pressed{
+					background-color: #0085FF;
+					color: #FFFFFF;
+				}
+		    """)
+			msg_box.exec()
+
+		QTimer.singleShot(0, show_critical_box)
 
 
 class window4(QWidget):  # Customization settings
