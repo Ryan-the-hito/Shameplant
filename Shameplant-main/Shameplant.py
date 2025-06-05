@@ -5,6 +5,7 @@
 # coding:utf-8
 
 import codecs
+import pathlib
 import time
 
 from PyQt6.QtWidgets import (QWidget, QPushButton, QApplication,
@@ -45,8 +46,32 @@ except ImportError:
 app = QApplication(sys.argv)
 app.setQuitOnLastWindowClosed(False)
 
-BasePath = '/Applications/Shameplant.app/Contents/Resources/'
+# 获取沙盒 Application Support 路径
+base_dir = Path.home() / "Library/Application Support" / 'com.ryanthehito.shameplant'
+base_dir.mkdir(parents=True, exist_ok=True)
+resource_tarname = "Resources/"
+BasePath = str(os.path.join(base_dir, resource_tarname))
 #BasePath = ''  # test
+
+# copy items from app to basepath
+old_base_path = Path('/Applications/Shameplant.app/Contents/Resources/')
+if getattr(sys, 'frozen', False):  # 判断是否是打包后的应用
+	# base_path = Path(sys._MEIPASS) if hasattr(sys, '_MEIPASS') else Path(sys.executable).parent.parent / "Resources"
+	old_base_path = Path(sys.executable).parent.parent / "Resources"
+else:
+	# 开发环境路径（可以自定义）
+	old_base_path = Path(__file__).parent / "Resources"
+source_dir = old_base_path
+target_dir = os.path.join(base_dir, resource_tarname)
+# 只在目标目录不存在文件时才复制
+for item in source_dir.iterdir():
+	target_item = os.path.join(target_dir, item.name)
+	if os.path.exists(target_item):
+		continue  # 已存在就跳过
+	if item.is_dir():
+		shutil.copytree(item, target_item)
+	else:
+		shutil.copy2(item, target_item)
 
 # Create the icon
 icon = QIcon(BasePath + "Shameplant_menu.icns")
@@ -70,7 +95,7 @@ action_refs = []
 # updade
 def on_config_clicked(config_name):
 	#print(f"Clicked: {config_name}")
-	home_dir = str(Path.home())
+	home_dir = base_dir
 	tarname1 = "ShameplantAppPath"
 	fulldir1 = os.path.join(home_dir, tarname1)
 	if not os.path.exists(fulldir1):
@@ -248,7 +273,7 @@ class window_about(QWidget):  # 增加说明页面(About)
 		widg2.setLayout(blay2)
 
 		widg3 = QWidget()
-		lbl1 = QLabel('Version 1.0.5', self)
+		lbl1 = QLabel('Version 1.0.6', self)
 		blay3 = QHBoxLayout()
 		blay3.setContentsMargins(0, 0, 0, 0)
 		blay3.addStretch()
@@ -711,13 +736,13 @@ class window_update(QWidget):  # 增加更新页面（Check for Updates）
 
 	def initUI(self):  # 说明页面内信息
 
-		self.lbl = QLabel('Current Version: v1.0.5', self)
+		self.lbl = QLabel('Current version: v1.0.6', self)
 		self.lbl.move(30, 45)
 
-		lbl0 = QLabel('Download Update:', self)
+		lbl0 = QLabel('Check release:', self)
 		lbl0.move(30, 75)
 
-		lbl1 = QLabel('Latest Version:', self)
+		lbl1 = QLabel('Latest version:', self)
 		lbl1.move(30, 15)
 
 		self.lbl2 = QLabel('', self)
@@ -728,10 +753,10 @@ class window_update(QWidget):  # 增加更新页面（Check for Updates）
 		bt1.clicked.connect(self.upd)
 		bt1.move(150, 75)
 
-		bt2 = QPushButton('Baidu Net Disk', self)
-		bt2.setFixedWidth(120)
-		bt2.clicked.connect(self.upd2)
-		bt2.move(150, 105)
+		# bt2 = QPushButton('Baidu Net Disk', self)
+		# bt2.setFixedWidth(120)
+		# bt2.clicked.connect(self.upd2)
+		# bt2.move(150, 105)
 
 		self.resize(300, 150)
 		self.center()
@@ -742,8 +767,8 @@ class window_update(QWidget):  # 增加更新页面（Check for Updates）
 	def upd(self):
 		webbrowser.open('https://github.com/Ryan-the-hito/Shameplant/releases')
 
-	def upd2(self):
-		webbrowser.open('https://pan.baidu.com/s/1qiqqRuW8yURvOyemDou1Jg?pwd=dqkg')
+	# def upd2(self):
+	# 	webbrowser.open('https://pan.baidu.com/s/1qiqqRuW8yURvOyemDou1Jg?pwd=dqkg')
 
 	def center(self):  # 设置窗口居中
 		qr = self.frameGeometry()
@@ -1012,7 +1037,7 @@ class Slide(QWidget): # guide page
 	def handle_feature_c(self):
 		to = "sweeter.02.implant@icloud.com"
 		subject = "[Feedback-Shameplant]"
-		body = "\n\n---\nShameplant v1.0.5"
+		body = "\n\n---\nShameplant v1.0.6"
 		# 对 subject 和 body 进行 URL 编码
 		subject_encoded = urllib.parse.quote(subject)
 		body_encoded = urllib.parse.quote(body)
@@ -1158,7 +1183,7 @@ class SliderWindow(QWidget): # inside pages of guidance
 
 	def slide_to(self, new_index):
 		if new_index < 0 or new_index >= self.stack.count():
-			home_dir = str(Path.home())
+			home_dir = base_dir
 			tarname1 = "ShameplantAppPath"
 			fulldir1 = os.path.join(home_dir, tarname1)
 			if not os.path.exists(fulldir1):
@@ -1238,7 +1263,7 @@ class AppEventListener(NSObject): # WindowSwitchAuto
 	""" 监听 macOS 前台应用变化，避免轮询消耗资源 """
 
 	def init(self):
-		home_dir = str(Path.home())
+		home_dir = base_dir
 		tarname1 = "ShameplantAppPath"
 		fulldir1 = os.path.join(home_dir, tarname1)
 		if not os.path.exists(fulldir1):
@@ -1316,7 +1341,7 @@ class AppEventListener(NSObject): # WindowSwitchAuto
 				return
 
 			# 读取 dock 位置 & 配置参数
-			home_dir = str(Path.home())
+			home_dir = base_dir
 			settings_dir = os.path.join(home_dir, "ShameplantAppPath")
 			pos_file = os.path.join(settings_dir, "Position.txt")
 			dist_file = os.path.join(settings_dir, "Distance.txt")
@@ -1544,7 +1569,7 @@ class window3(QWidget):  # 主窗口
 		self.ReLa()
 
 	def initUI(self):
-		home_dir = str(Path.home())
+		home_dir = base_dir
 		tarname1 = "ShameplantAppPath"
 		fulldir1 = os.path.join(home_dir, tarname1)
 		if not os.path.exists(fulldir1):
@@ -1726,22 +1751,23 @@ class window3(QWidget):  # 主窗口
 	def ReLa(self):
 		ReLa = codecs.open(BasePath + "ReLa.txt", 'r', encoding='utf-8').read()
 		if ReLa == '1':
-			try:
-				self.listener = AppEventListener.alloc().init()  # window switch auto
-				# 启动鼠标监听线程 click drag auto
-				self.last_active_name = None
-				self.pass_key = 0
-				self.mouse_thread = MouseClickListener()
-				self.mouse_thread.click_signal.connect(self.on_click_action)
-				self.mouse_thread.drag_signal.connect(self.update_label)
-				self.mouse_thread.start()
-				action3.setChecked(True)
-			except Exception as e:
-				# 发生异常时打印错误信息
-				p = "程序发生异常:" + str(e)
-				with open(BasePath + "Error.txt", 'a', encoding='utf-8') as f0:
-					f0.write(p)
-				action3.setChecked(False)
+			if self.auto_launch != '1':
+				try:
+					self.listener = AppEventListener.alloc().init()  # window switch auto
+					# 启动鼠标监听线程 click drag auto
+					self.last_active_name = None
+					self.pass_key = 0
+					self.mouse_thread = MouseClickListener()
+					self.mouse_thread.click_signal.connect(self.on_click_action)
+					self.mouse_thread.drag_signal.connect(self.update_label)
+					self.mouse_thread.start()
+					action3.setChecked(True)
+				except Exception as e:
+					# 发生异常时打印错误信息
+					p = "程序发生异常:" + str(e)
+					with open(BasePath + "Error.txt", 'a', encoding='utf-8') as f0:
+						f0.write(p)
+					action3.setChecked(False)
 
 	def get_screen_with_dock(self):
 		for screen in NSScreen.screens():
@@ -1777,7 +1803,8 @@ class window3(QWidget):  # 主窗口
 		return None
 	def on_timer_tick(self):
 		# 如果此时的dock有显示、不为None，且dock的高度不为0，那么更新本地记录
-		if self.get_screen_with_dock() != None:
+		screens = NSScreen.screens()
+		if self.get_screen_with_dock() != None and len(screens) == 1:
 			main_screen = NSScreen.mainScreen()
 			frame = main_screen.frame()
 			visible_frame = main_screen.visibleFrame()
@@ -1903,7 +1930,7 @@ class window3(QWidget):  # 主窗口
 
 			if self.pass_key == 1:
 				# 读取 dock 位置 & 配置参数
-				home_dir = str(Path.home())
+				home_dir = base_dir
 				settings_dir = os.path.join(home_dir, "ShameplantAppPath")
 				pos_file = os.path.join(settings_dir, "Position.txt")
 				dist_file = os.path.join(settings_dir, "Distance.txt")
@@ -2010,7 +2037,7 @@ class window3(QWidget):  # 主窗口
 				return
 
 			# 读取 dock 位置 & 配置参数
-			home_dir = str(Path.home())
+			home_dir = base_dir
 			settings_dir = os.path.join(home_dir, "ShameplantAppPath")
 			pos_file = os.path.join(settings_dir, "Position.txt")
 			dist_file = os.path.join(settings_dir, "Distance.txt")
@@ -2173,7 +2200,7 @@ class window4(QWidget):  # Customization settings
 			self.activateWindow()
 
 	def setUpMainWindow(self):
-		home_dir = str(Path.home())
+		home_dir = base_dir
 		tarname1 = "ShameplantAppPath"
 		fulldir1 = os.path.join(home_dir, tarname1)
 		if not os.path.exists(fulldir1):
@@ -2714,10 +2741,8 @@ class window4(QWidget):  # Customization settings
 			with open(self.fulldir3, 'w', encoding='utf-8') as f0:
 				f0.write(str(self.le1.text()))
 		self.close()
-		with open(BasePath + "DockRe.txt", 'w', encoding='utf-8') as f0:
-			f0.write('0')
 		with open(BasePath + "ReLa.txt", 'w', encoding='utf-8') as f0:
-			f0.write('1')
+			f0.write('0')
 		time.sleep(0.5)
 		os.execv(sys.executable, [sys.executable, __file__])
 
