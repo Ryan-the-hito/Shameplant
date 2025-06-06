@@ -8,6 +8,13 @@ __version__ = '1.0.6'
 info_plist = {
     'LSUIElement': True,
     #'LSBackgroundOnly': True,
+    'NSHumanReadableCopyright': 'Copyright © 2025 Yixiang SHEN. All rights reserved.',
+    'CFBundleVersion': '2',
+    "LSApplicationCategoryType": "public.app-category.productivity",
+    "com.apple.security.app-sandbox": True,
+    "NSPrincipalClass": "NSApplication",
+    "LSMinimumSystemVersion": "15.0",
+    "ITSAppUsesNonExemptEncryption": False,
 }
 
 a = Analysis(
